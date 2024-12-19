@@ -7,7 +7,9 @@ import docx # note: the module is named "python-docx" in pip
 import unrpa
 
 def sentenceCase(string):
-    temp = string.replace("_", " ").replace("-", " ")
+    temp = string.replace("_", " ")
+    if (" " not in string):
+        temp = temp.replace("-", " ")
     temp2 = ""
     for s in temp.split(" "):
         if (len(s) > 1):
