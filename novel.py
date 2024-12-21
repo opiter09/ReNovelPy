@@ -6,7 +6,7 @@ import FreeSimpleGUI as psg
 import docx # note: the module is named "python-docx" in pip
 import unrpa
 
-def sentenceCase(string):
+def titleCase(string):
     temp = string.replace("_", " ")
     if (" " not in string):
         temp = temp.replace("-", " ")
@@ -69,6 +69,30 @@ combined = combined.decode("UTF-8", errors = "ignore")
 combL = list(combined.split("\n")).copy()
 combL = [x.strip() for x in combL]
 
+def findSprite(image):
+    global combL
+    global folder
+
+    if (image == ""):
+        return("")
+
+    sprite = ""
+    for i in range(len(combL)):
+        l2 = combL[i]
+        if ((l2.startswith("image ") == True) and ((" " + image + " ") in l2)):
+            if (('.png"' in l2) or ('.jpg"' in l2)):
+                j = i
+            else:
+                j = i
+                while (j < (len(combL) - 1)) and ('.png"' not in combL[j]) and ('.jpg"' not in combL[j]):
+                    j = j + 1
+            for small in combL[j].split('"'):
+                if ((small.endswith(".png") == True) or (small.endswith(".jpg") == True)):
+                    sprite = folder + small
+                    # print(sprite)
+            break
+    return(sprite)
+    
 new = docx.Document()
 head = new.add_heading(titleU, 0)
 head.alignment = docx.enum.text.WD_ALIGN_PARAGRAPH.CENTER
@@ -87,7 +111,10 @@ for i in range(len(combL)):
                 if (name[j + 1] != "{"):
                     name = name[(j + 1):].split("{")[0]
                     break
-        nameVars[l.split(" ")[1].split("=")[0]] = name
+        var = l.split(" ")[1].split("=")[0]
+        if (var[-1] == " "):
+            var = var[0:-1]
+        nameVars[var] = name
         image = ""
         if (l.endswith(")") == True):
             temp = l.replace(" =", "=").replace("= ", "=")
@@ -103,20 +130,7 @@ for i in range(len(combL)):
         sprite = ""
         if (image != ""):
             # print(image)
-            for k in range(len(combL)):
-                l2 = combL[k]
-                if ((l2.startswith("image ") == True) and ((" " + image + " ") in l2)):
-                    if (('.png"' in l2) or ('.jpg"' in l2)):
-                        m = k
-                    else:
-                        m = k
-                        while (m < (len(combL) - 1)) and ('.png"' not in combL[m]) and ('.jpg"' not in combL[m]):
-                            m = m + 1
-                    for small in combL[m].split('"'):
-                        if ((small.endswith(".png") == True) or (small.endswith(".jpg") == True)):
-                            sprite = folder + small
-                            # print(sprite)
-                    break
+            sprite = findSprite(image)
         if (((name not in usedNames.keys()) or (usedNames[name] == "")) and (name.replace("?", "") != "")):
             if ((sprite not in usedNames.values()) or (sprite == "")):
                 usedNames[name] = sprite
@@ -128,13 +142,75 @@ for n in usedNames.keys():
         new.add_picture(usedNames[n])
 new.add_page_break()
 # new.save("./" + title.replace(" ", "_") + ".docx")
-            
+
+
+otherImageVars = []
+for l in combL:
+    if (l.startswith("image ") == True):
+        temp = l[6:].split(":")[0].split("=")[0]
+        if (temp[-1] == " "):
+            temp = temp[0:-1]
+        if (temp not in nameVars.keys()):
+            otherImageVars.append(temp)
+otherImageVars.sort() # shorter names come first
+
+def handleTags(string):
+    global p
+
 curr = ""
 for lab in labels:
     curr = lab
     while ("label " + curr + ":\n") in combined:
-        new.add_header(sentenceCase(curr), 0)
+        new.add_header(titleCase(curr), 0)
         ind = combL.index("label " + curr + ":\n")
+        while True:
+            line = combL[ind]
+            if ((line.startswith("play sound ") == True) or (line.startswith("play audio ") == True)):
+                p = new.add_paragraph()
+                p.add_run("Sound: " + titleCase(line.split('"')[1][0:-4])).italic = True
+            elif (line.startswith("scene bg ") == True) or (line.startswith("scene cg ") == True)):
+                temp = ""
+                for v in otherImageVars:
+                    if ((" " + v + " ") in line[9:]):
+                        temp = v # don't break so longer names trump shorter ones
+                sprite = findSprite(temp)
+                if (sprite != "")
+                    new.add_picture(sprite)
+            elif (line.startswith("scene ") == True):
+                temp = ""
+                for v in otherImageVars:
+                    if ((" " + v + " ") in line[6:]):
+                        temp = v # don't break so longer names trump shorter ones
+                sprite = findSprite(temp)
+                if (sprite != "")
+                    new.add_picture(sprite)
+            elif (line.startswith("show ") == True):
+                temp = ""
+                for v in otherImageVars:
+                    if ((" " + v + " ") in line[5:]):
+                        temp = v # don't break so longer names trump shorter ones
+                sprite = findSprite(temp)
+                if (sprite != "")
+                    new.add_picture(sprite)
+            elif (line.startswith("jump ") == True):
+                curr = line[5:]
+                break
+            elif (line.startswith("show text ") == True):
+                 p = new.add_paragraph()
+                 handleTags(line.split('"')[1])
+            else:
+                theKeys = list(nameVars.keys()).copy()
+                theKeys.sort() # shorter names come first
+                temp = ""
+                for k in theKeys:
+                    if ((line.startswith(var + " ") == True) or (line.startswith(var + '"') == True)):
+                        temp = k # don't break so longer names trump shorter ones
+                if (temp != ""):
+                    p = new.add_paragraph()
+                    p.add_run(temp + ": ").bold = True
+                    handleTags(line.split('"')[1])
+                    
+                
 
 
     
