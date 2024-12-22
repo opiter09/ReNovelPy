@@ -163,6 +163,7 @@ def handleTags(string):
     runs = []
     for t in tags:
         runs.append([t])
+    lastSize = ""
     for i in range(len(tags) - 2):
         if (tags[i] == "{"):
             runs[i].append("g" * 1000)
@@ -174,16 +175,23 @@ def handleTags(string):
                 if (safe.split("=")[0] in ["b", "i", "s", "u", "plain", "size"]):
                     for j in range(i + 1, len(tags)):
                         runs[j].append(safe)
+                    if (safe.split("=")[0] == "size"):
+                        lastSize = safe
                 elif (safe.split("=")[0] == "space"):
                     runs[i + 1][0] = " " * int(safe.split("=")[1])
             else:
                 safe = tags[i + 1].replace(" ", "")
                 for j in range(i + 1, len(tags)):
-                    runs[j].remove(safe[1:])
+                    try:
+                        runs[j].remove(safe[1:])
+                    except ValueError:
+                        if (safe == "/size"):
+                            runs[j].remove(lastSize)
+                            
     for r in runs:
         if ((r[0] != "") and ((("g" * 1000) not in r) or (r[0].replace(" ", "") == ""))):
             thing = p.add_run(r[0])
-            thing.font.size = docx.shared.Pt(11)
+            thing.font.size = docx.shared.Pt(12)
             if ("b" in r):
                 thing.bold = True
             if ("i" in r):
@@ -246,7 +254,7 @@ for lab in labels:
                 sprite = findSprite(temp)
                 if (sprite != ""):
                     new.add_picture(sprite)
-            elif (line.startswith("show ") == True):
+            elif ((line.startswith("show ") == True) and (line.startswith("show text ") == False)):
                 temp = ""
                 for v in otherImageVars:
                     if ((" " + v + " ") in line[5:]):
@@ -271,12 +279,14 @@ for lab in labels:
                 theKeys.sort() # shorter names come first
                 temp = ""
                 for k in theKeys:
-                    if ((line.startswith(var + " ") == True) or (line.startswith(var + '"') == True)):
+                    if ((line.startswith(k + " ") == True) or (line.startswith(k + '"') == True)):
                         temp = k # don't break so longer names trump shorter ones
                 if (temp != ""):
                     p = new.add_paragraph()
                     if (nameVars[temp] != ""):
-                        p.add_run(nameVars[temp] + ": ").bold = True
+                        name = p.add_run(nameVars[temp] + ": ")
+                        name.bold = True
+                        name.font.size = docx.shared.Pt(12)
                     handleTags(line.split('"')[1])
             ind = ind + 1
             if (ind == len(combL)):
