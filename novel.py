@@ -57,17 +57,21 @@ for l in r.split("\n"):
 titleU = title.upper()
 # print(title)
 
-combined = bytes(0) # to avoid looping through files all the time
+combined = "" # to avoid looping through files all the time
 for root, dirs, files in os.walk(folder):
     for file in files:
         if (file.endswith(".rpy") == True):
             f = open(os.path.join(root, file), "rb")
             r = f.read()
             f.close()
-            combined = combined + r + ("\n\n").encode("UTF-8", errors = "ignore")
-combined = combined.decode("UTF-8", errors = "ignore")
+            combined = combined + "\n\n" + r.decode("UTF-8", errors = "ignore")
 combined = combined.replace("\\[", "[").replace("\\]", "]")
 combined = combined.replace("\\{", "<").replace("\\}", ">")
+weirdData = [
+    (b"\xef\xbb\xbf").decode("UTF-8", errors = "ignore")
+]
+for x in weirdData:
+    combined = combined.replace(x, "")
 # print(combined[0:50])
 combL = list(combined.split("\n")).copy()
 combL = [x.strip() for x in combL]
@@ -81,8 +85,8 @@ def findSprite(image):
 
     sprite = ""
     for i in range(len(combL)):
-        l2 = combL[i]
-        if ((l2.startswith("image ") == True) and ((" " + image + " ") in l2)):
+        l2 = combL[i].replace(" =", "=").replace("= ", "=")
+        if ((l2.startswith("image ") == True) and (((" " + image + " ") in l2) or ((" " + image + "=") in l2))):
             if (('.png"' in l2) or ('.jpg"' in l2)):
                 j = i
             else:
@@ -101,8 +105,11 @@ head = new.add_heading(titleU, 0)
 head.alignment = docx.enum.text.WD_ALIGN_PARAGRAPH.CENTER
 new.add_page_break()
 
+section = new.sections[0]
+pageWidth = section.page_width - section.left_margin - section.right_margin
 
-new.add_heading("DRAMATIS PERSONÆ", 1)
+
+new.add_heading("Dramatis Personæ", 0)
 nameVars = {}
 usedNames = {}
 for i in range(len(combL)):
@@ -142,7 +149,7 @@ for i in range(len(combL)):
 for n in usedNames.keys():
     new.add_heading(n, 1)
     if (usedNames[n] != ""):
-        new.add_picture(usedNames[n])
+        new.add_picture(usedNames[n], width = (pageWidth * 0.5))
 new.add_page_break()
 
 otherImageVars = []
@@ -154,6 +161,8 @@ for l in combL:
         if (temp not in nameVars.keys()):
             otherImageVars.append(temp)
 otherImageVars.sort() # shorter names come first
+# print(nameVars.keys())
+# print(otherImageVars)
 
 p = ""
 def handleTags(string):
@@ -220,6 +229,7 @@ curr = ""
 for lab in labels:
     curr = lab
     while ("\n" + "label " + curr + ":") in combined:
+        # print(curr)
         new.add_heading(titleCase(curr), 0)
         ind = 0
         for i in range(len(combL)):
@@ -228,10 +238,11 @@ for lab in labels:
                 break
         while True:
             line = combL[ind]
-            if (line == ""):
+            if ((line == "") or (line.startswith("#") == True) or (line.startswith("$") == True)):
                 ind = ind + 1
                 if (ind == len(combL)):
                     curr = "g" * 1000
+                    # print("finalBlank")
                     break
                 else:
                     continue
@@ -241,35 +252,37 @@ for lab in labels:
             elif ((line.startswith("scene bg ") == True) or (line.startswith("scene cg ") == True)):
                 temp = ""
                 for v in otherImageVars:
-                    if ((" " + v + " ") in line[9:]):
+                    if ((" " + v) in line[8:]):
                         temp = v # don't break so longer names trump shorter ones
                 sprite = findSprite(temp)
                 if (sprite != ""):
-                    new.add_picture(sprite)
+                    new.add_picture(sprite, width = pageWidth)
             elif (line.startswith("scene ") == True):
                 temp = ""
                 for v in otherImageVars:
-                    if ((" " + v + " ") in line[6:]):
+                    if ((" " + v) in line[5:]):
                         temp = v # don't break so longer names trump shorter ones
                 sprite = findSprite(temp)
                 if (sprite != ""):
-                    new.add_picture(sprite)
-            elif ((line.startswith("show ") == True) and (line.startswith("show text ") == False)):
+                    new.add_picture(sprite, width = pageWidth)
+            elif False: # elif ((line.startswith("show ") == True) and (line.startswith("show text ") == False)):
                 temp = ""
                 for v in otherImageVars:
-                    if ((" " + v + " ") in line[5:]):
+                    if ((" " + v) in line[4:]):
                         temp = v # don't break so longer names trump shorter ones
                 sprite = findSprite(temp)
                 if (sprite != ""):
-                    new.add_picture(sprite)
+                    new.add_picture(sprite, width = pageWidth)
             elif (line.startswith("jump ") == True):
                 curr = line[5:]
+                # print("jump")
                 break
             elif (line.startswith("show text ") == True):
                  p = new.add_paragraph()
                  handleTags(line.split('"')[1])
             elif (line[0:6] == "return"):
                 curr = "g" * 1000
+                # print("finalReturn")
                 break
             elif (line[0] == '"'):
                 p = new.add_paragraph()
@@ -289,8 +302,10 @@ for lab in labels:
                         name.font.size = docx.shared.Pt(12)
                     handleTags(line.split('"')[1])
             ind = ind + 1
-            if (ind == len(combL)):
+            if ((ind == len(combL)) and (line.startswith("jump ") == False)):
                 curr = "g" * 1000
+                # print("finalNormal")
                 break
+    # print(curr + " out")
 
 new.save("./" + title.replace(" ", "_") + ".docx")
