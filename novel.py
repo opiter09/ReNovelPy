@@ -33,6 +33,25 @@ if (os.path.exists(folder) == False):
                 rpa = unrpa.UnRPA(filename = os.path.join(root, file), path = folder)
                 rpa.extract_files()
                 os.remove(os.path.join(root, file))
+                
+layout = [
+    [ psg.Button("No Images", key = "none") ],
+    [ psg.Button("Characters Only", key = "chara") ],
+    [ psg.Button("All Images", key = "all") ]
+]
+
+window = psg.Window("", layout, grab_anywhere = True, resizable = True, font = "-size 12")
+
+imageChoice = "none"
+while True:
+    event, values = window.read()
+    # See if user wants to quit or window was closed
+    if (event == psg.WINDOW_CLOSED) or (event == "Quit"):
+        break
+    elif (event in ["none", "chara", "all"]):
+        imageChoice = event
+        break
+window.close()
 
 labels = ["start"]
 f = open(folder + "screens.rpy", "rb")
@@ -108,14 +127,20 @@ new.add_page_break()
 section = new.sections[0]
 pageWidth = section.page_width - section.left_margin - section.right_margin
 
-
-new.add_heading("Dramatis Personæ", 0)
 nameVars = {}
 usedNames = {}
 for i in range(len(combL)):
     l = combL[i]
-    if (('Character("' in l) and (l[0] != "#")):
-        name = l.split('Character("')[1].split('"')[0]
+    if (("Character(" in l) and (l[0] != "#")):
+        if ('Character("' in l):
+            name = l.split('Character("')[1].split('"')[0]
+        elif ("Character(None" in l):
+            name = "~|NONE|~" # surely no-one actually uses this, right?
+        elif (i != (len(combL) - 1)):
+            if (combL[i + 1][0] == '"'):
+                name = combL[i + 1].split('"')[1]
+            else:
+                name = "~|NONE|~"
         for j in range(len(name)):
             if ((j < (len(name) - 1)) and (name[j] == "}")):
                 if (name[j + 1] != "{"):
@@ -146,29 +171,47 @@ for i in range(len(combL)):
                 usedNames[name] = sprite
 # print(usedNames)
 
-for n in usedNames.keys():
-    new.add_heading(n, 1)
-    if (usedNames[n] != ""):
-        new.add_picture(usedNames[n], width = int(pageWidth * 0.5))
-new.add_page_break()
+if (imageChoice != "none"):
+    new.add_heading("Dramatis Personæ", 0)
+    for n in usedNames.keys():
+        if (n != "~|NONE|~"):
+            new.add_heading(n, 1)
+            if (usedNames[n] != ""):
+                new.add_picture(usedNames[n], width = int(pageWidth * 0.5))
+    new.add_page_break()
 
+allImageVars = []
 otherImageVars = []
 for l in combL:
     if (l.startswith("image ") == True):
         temp = l[6:].split(":")[0].split("=")[0]
         if (temp[-1] == " "):
             temp = temp[0:-1]
-        if (temp not in nameVars.keys()):
+        allImageVars.append(temp)
+        check = 0
+        for n in (list(nameVars.keys()).copy() + list(nameVars.values()).copy()):
+            if (temp.lower().replace("_", " ").replace("-", " ").startswith(n.lower() + " ") == True):
+                check = 1
+            elif ((temp.lower().startswith(n.lower()) == True) and (temp[len(n)] in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"])):
+                check = 1
+        if (check == 0):
             otherImageVars.append(temp)
-otherImageVars.sort() # shorter names come first
-# print(nameVars.keys())
-# print(otherImageVars)
+allImageVars.sort() # shorter names come first
+otherImageVars.sort()
+# print(allImageVars)
 
 p = ""
 def handleTags(string):
     global p
     
-    tags =  re.split(r'([\{\}])', string) # thank you Stack Exchange
+    drop = string
+    if ((drop[0] == "“") and (drop[-1] == "”")):
+        drop = drop[1:-1]
+    elif ((drop.startswith('\\"') == True) and ((drop.endswith('\\"') == True))):
+        drop = drop[2:-2]
+    drop = drop.replace("\\n", "")
+        
+    tags =  re.split(r'([\{\}])', drop) # thank you Stack Exchange
     runs = []
     for t in tags:
         runs.append([t])
@@ -206,13 +249,13 @@ def handleTags(string):
             if ("i" in r):
                 thing.italic = True
             if ("s" in r):
-                thing.strike = True
+                thing.font.strike = True
             if ("u" in r):
                 thing.underline = True
             if ("plain" in r):
                 thing.bold = False
                 thing.italic = False
-                thing.strike = False
+                thing.font.strike = False
                 thing.underline = False
             for val in r:
                 if (val.startswith("size") == True):
@@ -248,31 +291,57 @@ for lab in labels:
                     continue
             if ((line.startswith("play sound ") == True) or (line.startswith("play audio ") == True)):
                 p = new.add_paragraph()
-                p.add_run("Sound: " + titleCase(line.split('"')[1].split("/")[-1][0:-4])).italic = True
-            elif ((line.startswith("scene bg ") == True) or (line.startswith("scene cg ") == True)):
-                temp = ""
-                for v in otherImageVars:
-                    if ((" " + v) in line[8:]):
-                        temp = v # don't break so longer names trump shorter ones
-                sprite = findSprite(temp)
-                if (sprite != ""):
-                    new.add_picture(sprite, width = pageWidth)
+                r = p.add_run("Sound: " + titleCase(line.split('"')[1].split("/")[-1][0:-4]))
+                r.font.size = docx.shared.Pt(13)
+                r.italic = True
             elif (line.startswith("scene ") == True):
                 temp = ""
-                for v in otherImageVars:
+                for v in allImageVars:
                     if ((" " + v) in line[5:]):
                         temp = v # don't break so longer names trump shorter ones
                 sprite = findSprite(temp)
+                if (sprite == ""):
+                    chop = line[6:]
+                    for func in ["with", "as", "at", "behind", "onlayer", "zorder"]:
+                        chop = chop.split(" " + func + " ")[0]
+                    if (chop[-1] == ":"):
+                        chop = chop[0:-1]
+                    for root, dirs, files in os.walk(folder + "images"):
+                        for file in files:
+                            if (file[0:-4] == chop):
+                                sprite = os.path.join(root, file)
                 if (sprite != ""):
-                    new.add_picture(sprite, width = pageWidth)
-            elif False: # elif ((line.startswith("show ") == True) and (line.startswith("show text ") == False)):
+                    if (imageChoice == "all"):
+                        new.add_picture(sprite, width = pageWidth)
+                    else:
+                        p = new.add_paragraph()
+                        r = p.add_run("Scene: " + titleCase(sprite.split("/")[-1][0:-4]))
+                        r.font.size = docx.shared.Pt(13)
+                        r.italic = True
+            elif ((line.startswith("show ") == True) and (line.startswith("show text ") == False)):
                 temp = ""
                 for v in otherImageVars:
                     if ((" " + v) in line[4:]):
                         temp = v # don't break so longer names trump shorter ones
                 sprite = findSprite(temp)
+                if (sprite == ""):
+                    chop = line[5:]
+                    for func in ["with", "as", "at", "behind", "onlayer", "zorder"]:
+                        chop = chop.split(" " + func + " ")[0]
+                    if (chop[-1] == ":"):
+                        chop = chop[0:-1]
+                    for root, dirs, files in os.walk(folder + "images"):
+                        for file in files:
+                            if (file[0:-4] == chop):
+                                sprite = os.path.join(root, file)
                 if (sprite != ""):
-                    new.add_picture(sprite, width = pageWidth)
+                    if (imageChoice == "all"):
+                        new.add_picture(sprite, width = pageWidth)
+                    else:
+                        p = new.add_paragraph()
+                        r = p.add_run("Visual: " + titleCase(sprite.split("/")[-1][0:-4]))
+                        r.font.size = docx.shared.Pt(13)
+                        r.italic = True
             elif (line.startswith("jump ") == True):
                 curr = line[5:]
                 # print("jump")
@@ -296,10 +365,15 @@ for lab in labels:
                         temp = k # don't break so longer names trump shorter ones
                 if (temp != ""):
                     p = new.add_paragraph()
-                    if (nameVars[temp] != ""):
-                        name = p.add_run(nameVars[temp] + ": ")
-                        name.bold = True
-                        name.font.size = docx.shared.Pt(12)
+                    if (nameVars[temp] != "~|NONE|~"):
+                        if (nameVars[temp] != ""):
+                            name = p.add_run(nameVars[temp] + ": ")
+                            name.bold = True
+                            name.font.size = docx.shared.Pt(12)
+                        # else:
+                            # name = p.add_run("???: ")
+                            # name.bold = True
+                            # name.font.size = docx.shared.Pt(12)
                     handleTags(line.split('"')[1])
             ind = ind + 1
             if ((ind == len(combL)) and (line.startswith("jump ") == False)):
