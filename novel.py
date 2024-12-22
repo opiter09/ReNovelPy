@@ -70,8 +70,8 @@ combined = combined.replace("\\{", "<").replace("\\}", ">")
 weirdData = [
     (b"\xef\xbb\xbf").decode("UTF-8", errors = "ignore")
 ]
-for x in weirdData:
-    combined = combined.replace(x, "")
+for w in weirdData:
+    combined = combined.replace(w, "")
 # print(combined[0:50])
 combL = list(combined.split("\n")).copy()
 combL = [x.strip() for x in combL]
@@ -149,7 +149,7 @@ for i in range(len(combL)):
 for n in usedNames.keys():
     new.add_heading(n, 1)
     if (usedNames[n] != ""):
-        new.add_picture(usedNames[n], width = (pageWidth * 0.5))
+        new.add_picture(usedNames[n], width = int(pageWidth * 0.5))
 new.add_page_break()
 
 otherImageVars = []
