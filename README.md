@@ -5,7 +5,7 @@ when climate change destroys civilization these VNs won't all be lost to time.
 NOTE: This tool is is only designed for Windows (unless you want to try running the Python yourself). For Mac and Linux, I can only
 point you to WINE: https://www.winehq.org
 
-In terms of the visuals, obviously most things are not saved, you will get a list of characters with one sprite each at the beginning,
+In terms of the visuals, obviously most things are not saved: you will get a list of characters with one sprite each at the beginning,
 and then backgrounds, CGs, effects, etc. intermittently. However, for some games even this can creates files of very large sizes, so
 there is an option to only include the character sprites, or no visuals at all. If so, it will give you the file name as a "description."
 
@@ -18,5 +18,5 @@ variables work is really hard (to me at least), and since I figure that choice-h
 this is where we're at. However, the code is in the Public Domain, so if you would like to improve on it, by all means do so.
 
 Finally, please, please, PLEASE do not use this to facilitate piracy. It does not come with any game's assets, but it does unpack
-all archives present, and of course you could share the Word doc around if you wanted. None of this would be possible without the
+all archives present, and of course you could share the Word doc around if you wanted to. None of this would be possible without the
 hard work and dedication of all the VN devs out there, and they deserve fair compensation for their efforts.

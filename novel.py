@@ -382,7 +382,7 @@ for lab in labels:
                 returnInd = ind + 1
                 curr = line[5:].split(" from ")[0]
                 if (" from " in line):
-                    pass # returnCurr = line.split(" from ")[1]
+                    returnCurr = line.split(" from ")[1]
                 # print("call")
                 returnMC = menuChoices
                 returnSI = skipInd
