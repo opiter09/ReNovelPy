@@ -141,12 +141,15 @@ for i in range(len(combL)):
         res = titleCase(var)
         if (i < (len(combL) - 1)):
             for j in range(i + 1, len(combL)):
-                if ((combL[j] != "") and (combL[j][0] != "#") and ('"' in combL[j]) and (" or " in combL[j])):
-                    var = combL[j].split("=")[0]
-                    if (var[-1] == " "):
-                        var = var[0:-1]
-                    res = combL[j].split('"')[1]
-                    break
+                if ((combL[j] != "") and (combL[j][0] != "#") and ('"' in combL[j])):
+                    if ("=" in combL[j]):
+                        var = combL[j].split("=")[0]
+                        if (var[-1] == " "):
+                            var = var[0:-1]
+                        res = combL[j].split('"')[1]
+                        break
+                    else:
+                        break
         res = res.replace("\\[", "[").replace("\\]", "]")
         res = res.replace("\\{", "<").replace("\\}", ">")
         for j in range(len(res)):
@@ -162,25 +165,19 @@ for i in range(len(combL)):
     if (("Character(" in l) and (l[0] != "#")):
         if ('Character("' in l):
             name = l.split('Character("')[1].split('"')[0]
+            for iv in inputVars.keys():
+                name = name.replace("[" + iv + "]", inputVars[iv])
         elif ("Character(None" in l):
             name = "~|NONE|~" # surely no-one actually uses this, right?
-        elif (l.split("#")[0].strip().endswith("Character(") == False):
-            for iv in inputVars.keys():
-                if (("Character(" + iv) in l):
-                    name = inputVars[iv]
-                    break
         elif (i < (len(combL) - 1)):
             for j in range(i + 1, len(combL)):
                 if ((combL[j] != "") and (combL[j][0] != "#")):
                     if (combL[j][0] == '"'):
                         name = combL[j].split('"')[1]
+                        for iv in inputVars.keys():
+                            name = name.replace("[" + iv + "]", inputVars[iv])
                     elif ("None" in combL[j]):
                         name = "~|NONE|~"
-                    else:
-                       for iv in inputVars.keys():
-                        if (("Character(" + iv) in combL[j]):
-                            name = inputVars[iv]
-                            break 
                     break
         name = name.replace("\\[", "[").replace("\\]", "]")
         name = name.replace("\\{", "<").replace("\\}", ">")
