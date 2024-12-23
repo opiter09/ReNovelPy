@@ -15,7 +15,7 @@ def titleCase(string):
     for s in temp.split(" "):
         if (len(s) > 1):
             temp2 = temp2 + s[0].upper() + s[1:]
-        else:
+        elif (len(s) == 1):
             temp2 = temp2 + s[0].upper()
     return(temp2)
 
@@ -83,6 +83,8 @@ for root, dirs, files in os.walk(folder):
             f = open(os.path.join(root, file), "rb")
             r = f.read()
             f.close()
+            # if (b"label start:" in r):
+                # print(file)
             combined = combined + "\n\n" + r.decode("UTF-8", errors = "ignore")
 combined = combined.replace("\\[", "[").replace("\\]", "]")
 combined = combined.replace("\\{", "<").replace("\\}", ">")
@@ -92,8 +94,8 @@ weirdData = [
 for w in weirdData:
     combined = combined.replace(w, "")
 # print(combined[0:50])
-combL = list(combined.split("\n")).copy()
-combL = [x.strip() for x in combL]
+combLSpaced = list(combined.split("\n")).copy()
+combL = [x.strip() for x in combLSpaced]
 
 def findSprite(image):
     global combL
@@ -106,6 +108,8 @@ def findSprite(image):
     for i in range(len(combL)):
         l2 = combL[i].replace(" =", "=").replace("= ", "=")
         if ((l2.startswith("image ") == True) and (((" " + image + " ") in l2) or ((" " + image + "=") in l2))):
+            if ("Movie(" in l2):
+                break
             if (('.png"' in l2) or ('.jpg"' in l2)):
                 j = i
             else:
@@ -136,8 +140,8 @@ for i in range(len(combL)):
             name = l.split('Character("')[1].split('"')[0]
         elif ("Character(None" in l):
             name = "~|NONE|~" # surely no-one actually uses this, right?
-        elif (i != (len(combL) - 1)):
-            if (combL[i + 1][0] == '"'):
+        elif (i < (len(combL) - 1)):
+            if ((combL[i + 1] != "") and (combL[i + 1][0] == '"')):
                 name = combL[i + 1].split('"')[1]
             else:
                 name = "~|NONE|~"
@@ -146,7 +150,7 @@ for i in range(len(combL)):
                 if (name[j + 1] != "{"):
                     name = name[(j + 1):].split("{")[0]
                     break
-        var = l.split(" ")[1].split("=")[0]
+        var = l[7:].split("=")[0]
         if (var[-1] == " "):
             var = var[0:-1]
         nameVars[var] = name
@@ -169,6 +173,13 @@ for i in range(len(combL)):
         if (((name not in usedNames.keys()) or (usedNames[name] == "")) and (name.replace("?", "") != "")):
             if ((sprite not in usedNames.values()) or (sprite == "")):
                 usedNames[name] = sprite
+    elif (("renpy.input(" in l) and (l[0] != "#")):
+        var = l.split("=")[0]
+        if (var[-1] == " "):
+            var = var[0:-1]
+        nameVars[var] = combL[i + 1].split('"')[1]
+        if (nameVars[var] not in usedNames.keys()):
+            usedNames[nameVars[var]] = ""
 # print(usedNames)
 
 if (imageChoice != "none"):
@@ -209,7 +220,7 @@ def handleTags(string):
         drop = drop[1:-1]
     elif ((drop.startswith('\\"') == True) and ((drop.endswith('\\"') == True))):
         drop = drop[2:-2]
-    drop = drop.replace("\\n", "")
+    drop = drop.replace("\\n", " ")
         
     tags =  re.split(r'([\{\}])', drop) # thank you Stack Exchange
     runs = []
@@ -269,29 +280,47 @@ def handleTags(string):
                         thing.font.size = docx.shared.Pt(int(val.split("=")[1]))      
 
 curr = ""
+usedCurr = []
+menuChoices = []
+skipInd = -1
+returnInd = -1
+returnCurr = ""
+returnMC = []
+returnSI = -1
+first = 0
 for lab in labels:
     curr = lab
     while ("\n" + "label " + curr + ":") in combined:
         # print(curr)
+        usedCurr.append(curr)
+        if (first == 0):
+            first = 1
+        else:
+            new.add_page_break()
         new.add_heading(titleCase(curr), 0)
-        ind = 0
-        for i in range(len(combL)):
-            if (combL[i].startswith("label " + curr + ":") == True):
-                ind = i
-                break
+        if (returnInd != -2):
+            ind = 0
+            for i in range(len(combL)):
+                if (combL[i].startswith("label " + curr + ":") == True):
+                    ind = i + 1
+                    break
+        else:
+            returnInd = -1
         while True:
             line = combL[ind]
-            if ((line == "") or (line.startswith("#") == True) or (line.startswith("$") == True)):
+            if ((line == "") or (line.startswith("#") == True)):
                 ind = ind + 1
                 if (ind == len(combL)):
                     curr = "g" * 1000
+                    if ("credits" not in usedCurr):
+                        curr = "credits"
                     # print("finalBlank")
                     break
                 else:
                     continue
             if ((line.startswith("play sound ") == True) or (line.startswith("play audio ") == True)):
                 p = new.add_paragraph()
-                r = p.add_run("Sound: " + titleCase(line.split('"')[1].split("/")[-1][0:-4]))
+                r = p.add_run("Sound: " + titleCase(line.split('"')[1].replace("\\", "/").split("/")[-1][0:-4]))
                 r.font.size = docx.shared.Pt(13)
                 r.italic = True
             elif (line.startswith("scene ") == True):
@@ -315,7 +344,7 @@ for lab in labels:
                         new.add_picture(sprite, width = pageWidth)
                     else:
                         p = new.add_paragraph()
-                        r = p.add_run("Scene: " + titleCase(sprite.split("/")[-1][0:-4]))
+                        r = p.add_run("Scene: " + titleCase(sprite.replace("\\", "/").split("/")[-1][0:-4]))
                         r.font.size = docx.shared.Pt(13)
                         r.italic = True
             elif ((line.startswith("show ") == True) and (line.startswith("show text ") == False)):
@@ -339,19 +368,97 @@ for lab in labels:
                         new.add_picture(sprite, width = pageWidth)
                     else:
                         p = new.add_paragraph()
-                        r = p.add_run("Visual: " + titleCase(sprite.split("/")[-1][0:-4]))
+                        r = p.add_run("Visual: " + titleCase(sprite.replace("\\", "/").split("/")[-1][0:-4]))
                         r.font.size = docx.shared.Pt(13)
                         r.italic = True
             elif (line.startswith("jump ") == True):
                 curr = line[5:]
                 # print("jump")
+                menuChoices = []
+                skipInd = -1
                 break
+            elif (line.startswith("call ") == True):
+                returnCurr = curr
+                returnInd = ind + 1
+                curr = line[5:].split(" from ")[0]
+                if (" from " in line):
+                    pass # returnCurr = line.split(" from ")[1]
+                # print("call")
+                returnMC = menuChoices
+                returnSI = skipInd
+                menuChoices = []
+                skipInd = -1
+                break
+            elif (line.startswith("menu:") == True):
+                menuChoices = []
+                spacesOld = 0
+                for s in combLSpaced[ind]:
+                    if (s == " "):
+                        spacesOld = spacesOld + 1
+                    elif (s == "\t"):
+                        spacesOld = spacesOld + 4
+                    else:
+                        break
+                for j in range(ind + 1, len(combL)):
+                    spacesNew = 0
+                    for s in combLSpaced[j]:
+                        if (s == " "):
+                            spacesNew = spacesNew + 1
+                        elif (s == "\t"):
+                            spacesNew = spacesNew + 4
+                        else:
+                            break
+                    if ((combL[j] != "") and (combLSpaced[j][0] != "#") and (spacesNew <= spacesOld)):
+                        skipInd = j
+                        break
+                    elif ((combL[j] != "") and (combL[j][0] == '"') and (combL[j][-1] == ":")):
+                        menuChoices.append([combL[j][1:-2], j + 1])
+                layout = []
+                for k in range(len(menuChoices)):
+                    layout = layout + [[psg.Button(menuChoices[k][0], key = "choice_" + str(k))]]
+                window = psg.Window("", layout, grab_anywhere = True, resizable = True, font = "-size 12")
+                res = 0
+                while True:
+                    event, values = window.read()
+                    # See if user wants to quit or window was closed
+                    if (event == psg.WINDOW_CLOSED) or (event == "Quit"):
+                        break
+                    elif (event.startswith("choice_") == True):
+                        res = int(event.split("_")[1])
+                        break
+                window.close()
+                ind = menuChoices[res][1]
+                # print(ind)
+                # print(skipInd)
+                continue    
             elif (line.startswith("show text ") == True):
                  p = new.add_paragraph()
                  handleTags(line.split('"')[1])
             elif (line[0:6] == "return"):
+                if (returnInd >= 0):
+                    ind = returnInd
+                    curr = returnCurr
+                    menuChoices = returnMC
+                    skipInd = returnSI
+                    returnInd = -2
+                    returnCurr = ""
+                    returnMC = []
+                    returnSI = -1
+                    break
+                else:
+                    curr = "g" * 1000
+                    if ("credits" not in usedCurr):
+                        curr = "credits"
+                    # print("finalReturn")
+                    break
+            elif ("renpy.full_restart()" in line):
                 curr = "g" * 1000
+                if ("credits" not in usedCurr):
+                    curr = "credits"
                 # print("finalReturn")
+                break
+            elif (line.startswith("label ") == True):
+                curr = line[6:-1]
                 break
             elif (line[0] == '"'):
                 p = new.add_paragraph()
@@ -378,8 +485,14 @@ for lab in labels:
             ind = ind + 1
             if ((ind == len(combL)) and (line.startswith("jump ") == False)):
                 curr = "g" * 1000
+                if ("credits" not in usedCurr):
+                    curr = "credits"
                 # print("finalNormal")
                 break
+            elif ((len(menuChoices) > 0) and (ind in [x[1] for x in menuChoices])):
+                ind = skipInd
+                menuChoices = []
+                skipInd = -1
     # print(curr + " out")
 
 new.save("./" + title.replace(" ", "_") + ".docx")
