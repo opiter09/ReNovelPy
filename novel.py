@@ -86,8 +86,6 @@ for root, dirs, files in os.walk(folder):
             # if (b"label start:" in r):
                 # print(file)
             combined = combined + "\n\n" + r.decode("UTF-8", errors = "ignore")
-combined = combined.replace("\\[", "[").replace("\\]", "]")
-combined = combined.replace("\\{", "<").replace("\\}", ">")
 weirdData = [
     (b"\xef\xbb\xbf").decode("UTF-8", errors = "ignore")
 ]
@@ -132,7 +130,33 @@ section = new.sections[0]
 pageWidth = section.page_width - section.left_margin - section.right_margin
 
 nameVars = {}
+inputVars = {}
 usedNames = {}
+for i in range(len(combL)):
+    l = combL[i]
+    if (("renpy.input(" in l) and (l[0] != "#")):
+        var = l.split("=")[0]
+        if (var[-1] == " "):
+            var = var[0:-1]
+        res = titleCase(var)
+        if (i < (len(combL) - 1)):
+            for j in range(i + 1, len(combL)):
+                if ((combL[j] != "") and (combL[j][0] != "#") and ('"' in combL[j]) and (" or " in combL[j])):
+                    var = combL[j].split("=")[0]
+                    if (var[-1] == " "):
+                        var = var[0:-1]
+                    res = combL[j].split('"')[1]
+                    break
+        res = res.replace("\\[", "[").replace("\\]", "]")
+        res = res.replace("\\{", "<").replace("\\}", ">")
+        for j in range(len(res)):
+            if ((j < (len(res) - 1)) and (res[j] == "}")):
+                if (res[j + 1] != "{"):
+                    res = res[(j + 1):].split("{")[0]
+                    break
+        nameVars[var] = res
+        inputVars[var] = res
+        usedNames[res] = ""
 for i in range(len(combL)):
     l = combL[i]
     if (("Character(" in l) and (l[0] != "#")):
@@ -140,11 +164,26 @@ for i in range(len(combL)):
             name = l.split('Character("')[1].split('"')[0]
         elif ("Character(None" in l):
             name = "~|NONE|~" # surely no-one actually uses this, right?
+        elif (l.split("#")[0].strip().endswith("Character(") == False):
+            for iv in inputVars.keys():
+                if (("Character(" + iv) in l):
+                    name = inputVars[iv]
+                    break
         elif (i < (len(combL) - 1)):
-            if ((combL[i + 1] != "") and (combL[i + 1][0] == '"')):
-                name = combL[i + 1].split('"')[1]
-            else:
-                name = "~|NONE|~"
+            for j in range(i + 1, len(combL)):
+                if ((combL[j] != "") and (combL[j][0] != "#")):
+                    if (combL[j][0] == '"'):
+                        name = combL[j].split('"')[1]
+                    elif ("None" in combL[j]):
+                        name = "~|NONE|~"
+                    else:
+                       for iv in inputVars.keys():
+                        if (("Character(" + iv) in combL[j]):
+                            name = inputVars[iv]
+                            break 
+                    break
+        name = name.replace("\\[", "[").replace("\\]", "]")
+        name = name.replace("\\{", "<").replace("\\}", ">")
         for j in range(len(name)):
             if ((j < (len(name) - 1)) and (name[j] == "}")):
                 if (name[j + 1] != "{"):
@@ -173,13 +212,6 @@ for i in range(len(combL)):
         if (((name not in usedNames.keys()) or (usedNames[name] == "")) and (name.replace("?", "") != "")):
             if ((sprite not in usedNames.values()) or (sprite == "")):
                 usedNames[name] = sprite
-    elif (("renpy.input(" in l) and (l[0] != "#")):
-        var = l.split("=")[0]
-        if (var[-1] == " "):
-            var = var[0:-1]
-        nameVars[var] = combL[i + 1].split('"')[1]
-        if (nameVars[var] not in usedNames.keys()):
-            usedNames[nameVars[var]] = ""
 # print(usedNames)
 
 if (imageChoice != "none"):
@@ -224,6 +256,10 @@ def handleTags(string):
     elif ((drop.startswith('\\"') == True) and ((drop.endswith('\\"') == True))):
         drop = drop[2:-2]
     drop = drop.replace("\\n", " ")
+    for iv in inputVars.keys():
+        drop = drop.replace("[" + iv + "]", inputVars[iv])
+    drop = drop.replace("\\[", "[").replace("\\]", "]")
+    drop = drop.replace("\\{", "<").replace("\\}", ">")
         
     tags =  re.split(r'([\{\}])', drop) # thank you Stack Exchange
     runs = []
