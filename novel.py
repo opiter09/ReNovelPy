@@ -200,10 +200,13 @@ for l in combL:
             temp = temp[0:-1]
         allImageVars.append(temp)
         check = 0
+        numberList = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
         for n in (list(nameVars.keys()).copy() + list(nameVars.values()).copy()):
-            if (temp.lower().replace("_", " ").replace("-", " ").startswith(n.lower() + " ") == True):
+            if (temp.lower().replace("_", " ").replace("-", " ") == n.lower()):
                 check = 1
-            elif ((temp.lower().startswith(n.lower()) == True) and (temp[len(n)] in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"])):
+            elif (temp.lower().replace("_", " ").replace("-", " ").startswith(n.lower() + " ") == True):
+                check = 1
+            elif ((temp.lower().startswith(n.lower()) == True) and (len(temp) > len(n)) and (temp[len(n)] in numberList)):
                 check = 1
         if (check == 0):
             otherImageVars.append(temp)
