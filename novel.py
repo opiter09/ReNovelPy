@@ -381,11 +381,14 @@ for lab in labels:
                 returnCurr = curr
                 returnInd = ind + 1
                 curr = line[5:].split(" from ")[0]
-                if (" from " in line):
-                    returnCurr = line.split(" from ")[1]
                 # print("call")
                 returnMC = menuChoices
                 returnSI = skipInd
+                if (" from " in line):
+                    returnCurr = line.split(" from ")[1]
+                    returnInd = -1
+                    returnMC = []
+                    returnSI = -1
                 menuChoices = []
                 skipInd = -1
                 break
@@ -435,12 +438,13 @@ for lab in labels:
                  p = new.add_paragraph()
                  handleTags(line.split('"')[1])
             elif (line[0:6] == "return"):
-                if (returnInd >= 0):
+                if (returnCurr != ""):
                     ind = returnInd
                     curr = returnCurr
                     menuChoices = returnMC
                     skipInd = returnSI
-                    returnInd = -2
+                    if (returnInd != -1):
+                        returnInd = -2
                     returnCurr = ""
                     returnMC = []
                     returnSI = -1
