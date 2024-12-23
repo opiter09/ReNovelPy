@@ -250,6 +250,9 @@ p = ""
 def handleTags(string):
     global p
     
+    if (string == ""):
+        return
+
     drop = string
     if ((drop[0] == "“") and (drop[-1] == "”")):
         drop = drop[1:-1]
