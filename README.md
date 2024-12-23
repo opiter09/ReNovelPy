@@ -2,8 +2,8 @@
 This is a tool to turn Ren'Py Visual Novels into regular novels (i.e. Word documents). That way, you can print them out, and then
 when climate change destroys civilization these VNs won't all be lost to time.
 
-NOTE 1: This tool is is only designed for Windows (unless you want to try running the Python yourself). For Mac and Linux, I can only
-point you to WINE (https://www.winehq.org/).
+NOTE 1: This tool is is only designed for Windows (unless you want to try running the Python yourself, that is). For Mac and Linux, I
+can only point you to WINE (https://www.winehq.org/).
 
 NOTE 2: If you cannot or do not want to pay for Microsoft Word, these documents can be edited for free with Google Docs, or with
 offline alternatives such as LibreOffice (https://www.libreoffice.org/).
