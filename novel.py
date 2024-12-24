@@ -236,7 +236,7 @@ for i in range(len(combL)):
         elif (i < (len(combL) - 1)):
             for j in range(i + 1, len(combL)):
                 if ((combL[j] != "") and (combL[j][0] != "#")):
-                    if (combL[j][0] in ['"', '"']):
+                    if (combL[j][0] in ['"', "'"]):
                         name = firstQuote(combL[j])
                         for iv in inputVars.keys():
                             name = name.replace("[" + iv + "]", inputVars[iv])
@@ -317,7 +317,7 @@ def handleTags(string):
     drop = string
     if ((drop[0] == "“") and (drop[-1] == "”")):
         drop = drop[1:-1]
-    elif ((len(drop) >= 2) and (drop[0] in ['"', '"']) and (drop[0] == drop[-1])):
+    elif ((len(drop) >= 2) and (drop[0] in ['"', "'"]) and (drop[0] == drop[-1])):
         drop = drop[1:-1]
     elif ((len(drop) >= 4) and (drop[0:2] in ['\\"', "\\'"]) and (drop[0:2] == drop[-2:])):
         drop = drop[2:-2]
