@@ -326,6 +326,7 @@ def handleTags(string):
         drop = drop.replace("[" + iv + "]", inputVars[iv])
     drop = drop.replace("\\[", "[").replace("\\]", "]")
     drop = drop.replace("\\{", "<").replace("\\}", ">")
+    drop = drop.replace('\\"','"').replace("\\'", "'")
         
     tags =  re.split(r'([\{\}])', drop) # thank you Stack Exchange
     runs = []
