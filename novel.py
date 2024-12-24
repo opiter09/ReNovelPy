@@ -14,11 +14,60 @@ def titleCase(string):
     temp2 = ""
     for s in temp.split(" "):
         if (len(s) > 1):
-            temp2 = temp2 + s[0].upper() + s[1:]
+            temp2 = temp2 + s[0].upper() + s[1:].lower()
         elif (len(s) == 1):
             temp2 = temp2 + s[0].upper()
     return(temp2)
 
+def inQuote(string, loc):
+    if ((string == "") or (loc >= len(string))):
+        return(False)
+        
+    oneQ = False
+    twoQ = False
+    for i in range(len(string)):
+        if (i == loc):
+            if ((string[i] == '"') and (twoQ == True)):
+                if ((i == 0) or (string[i - 1] != "\\")):
+                    oneQ = False
+                    twoQ = False
+            elif ((string[i] == "'") and (oneQ == True)):
+                if ((i == 0) or (string[i - 1] != "\\")):
+                    oneQ = False
+                    twoQ = False
+            break
+        elif ((string[i] == "'") and (twoQ == False)):
+            if ((i == 0) or (string[i - 1] != "\\")):
+                oneQ = not oneQ
+        elif ((string[i] == '"') and (oneQ == False)):
+            if ((i == 0) or (string[i - 1] != "\\")):
+                twoQ = not twoQ
+    return(oneQ or twoQ)
+ 
+def grabQuote(string, loc):
+    if ((string == "") or (loc >= len(string)) or (inQuote(string, loc) == False)):
+        return("")
+    
+    res = ""
+    for i in range(len(string)):
+        test = inQuote(string, i)
+        if (test == True):
+            res = res + string[i]
+        else:
+            if (i <= loc):
+                res = ""
+            else:
+                break
+    return(res)
+    
+def firstQuote(string):
+    here = 1000 * 1000
+    for i in range(len(string)):
+        if (inQuote(string, i) == True):
+            here = i
+            break
+    return(grabQuote(string, here))
+    
 path = psg.popup_get_file("Game Executable:", font = "-size 12")
 fo = path.split("/")[-2]
 fi = path.split("/")[-1]
@@ -58,8 +107,8 @@ f = open(folder + "screens.rpy", "rb")
 r = f.read().decode("UTF-8", errors = "ignore") # python is weird about Japanese etc. when using "rt"
 f.close()
 for l in r.split("\n"):
-    if ('action Start("' in l):
-        labels.append(l.split('action Start("')[1].split('"')[0])
+    if ("action Start(" in l):
+        labels.append(firstQuote(l.split("action Start(")[1]))
 # print(labels)
 
 title = ""
@@ -67,11 +116,8 @@ f = open(folder + "options.rpy", "rb")
 r = f.read().decode("UTF-8", errors = "ignore")
 f.close()
 for l in r.split("\n"):
-    if ("config.name" in l):
-        title = l.split('"')[1]
-        break
-    elif ("config.window_title" in l):
-        title = l.split('"')[1]
+    if (("config.name" in l) or ("config.window_title" in l)):
+        title = firstQuote(l)
         break
 titleU = title.upper()
 # print(title)
@@ -94,6 +140,14 @@ for w in weirdData:
 # print(combined[0:50])
 combLSpaced = list(combined.split("\n")).copy()
 combL = [x.strip() for x in combLSpaced]
+for i in range(len(combL)):
+    l = combL[i]
+    here = -1
+    for j in range(len(l)):
+        if ((l[j] == "#") and (inQuote(l, j) == False)):
+            here = j
+    if (here >= 0):
+        combL[i] = combL[i][0:here].strip()    
 
 def findSprite(image):
     global combL
@@ -108,16 +162,18 @@ def findSprite(image):
         if ((l2.startswith("image ") == True) and (((" " + image + " ") in l2) or ((" " + image + "=") in l2))):
             if ("Movie(" in l2):
                 break
-            if (('.png"' in l2) or ('.jpg"' in l2)):
+            if ((".png" in l2) or (".jpg" in l2)):
                 j = i
             else:
                 j = i
-                while ((j < (len(combL) - 1)) and ('.png"' not in combL[j]) and ('.jpg"' not in combL[j])) or (combL[j][0] == "#"):
+                while ((j < (len(combL) - 1)) and (".png" not in combL[j]) and (".jpg" not in combL[j])) or (combL[j][0] == "#"):
                     j = j + 1
-            for small in combL[j].split('"'):
+            for k in range(len(combL[j])):
+                small = grabQuote(combL[j], k)
                 if ((small.endswith(".png") == True) or (small.endswith(".jpg") == True)):
                     sprite = folder + small
                     # print(sprite)
+                    break
             break
     return(sprite)
     
@@ -134,6 +190,8 @@ inputVars = {}
 usedNames = {}
 for i in range(len(combL)):
     l = combL[i]
+    var = ""
+    res = ""
     if (("renpy.input(" in l) and (l[0] != "#")):
         var = l.split("=")[0]
         if (var[-1] == " "):
@@ -141,12 +199,12 @@ for i in range(len(combL)):
         res = titleCase(var)
         if (i < (len(combL) - 1)):
             for j in range(i + 1, len(combL)):
-                if ((combL[j] != "") and (combL[j][0] != "#") and ('"' in combL[j])):
+                if ((combL[j] != "") and (combL[j][0] != "#") and (firstQuote(combL[j]) != "")):
                     if ("=" in combL[j]):
                         var = combL[j].split("=")[0]
                         if (var[-1] == " "):
                             var = var[0:-1]
-                        res = combL[j].split('"')[1]
+                        res = firstQuote(combL[j])
                         break
                     else:
                         break
@@ -162,9 +220,15 @@ for i in range(len(combL)):
         usedNames[res] = ""
 for i in range(len(combL)):
     l = combL[i]
+    var = ""
+    name = ""
     if (("Character(" in l) and (l[0] != "#")):
         if ('Character("' in l):
             name = l.split('Character("')[1].split('"')[0]
+            for iv in inputVars.keys():
+                name = name.replace("[" + iv + "]", inputVars[iv])
+        elif ("Character('" in l):
+            name = l.split("Character('")[1].split("'")[0]
             for iv in inputVars.keys():
                 name = name.replace("[" + iv + "]", inputVars[iv])
         elif ("Character(None" in l):
@@ -172,8 +236,8 @@ for i in range(len(combL)):
         elif (i < (len(combL) - 1)):
             for j in range(i + 1, len(combL)):
                 if ((combL[j] != "") and (combL[j][0] != "#")):
-                    if (combL[j][0] == '"'):
-                        name = combL[j].split('"')[1]
+                    if (combL[j][0] in ['"', '"']):
+                        name = firstQuote(combL[j])
                         for iv in inputVars.keys():
                             name = name.replace("[" + iv + "]", inputVars[iv])
                     elif ("None" in combL[j]):
@@ -193,15 +257,15 @@ for i in range(len(combL)):
         image = ""
         if (l.endswith(")") == True):
             temp = l.replace(" =", "=").replace("= ", "=")
-            if ('image="' in temp):
-                image = temp.split('image="')[1].split('"')[0]
+            if ("image=" in temp):
+                image = firstQuote(temp.split("image=")[1])
         else:
             j = i
-            while (j < (len(combL) - 1)) and ('image="' not in combL[j].replace(" =", "=").replace("= ", "=")) and (('Character("' not in combL[j]) or (j == i)):
+            while (j < (len(combL) - 1)) and ("image=" not in combL[j].replace(" =", "=").replace("= ", "=")) and (("Character(" not in combL[j]) or (j == i)):
                 j = j + 1
             temp = combL[j].replace(" =", "=").replace("= ", "=")
-            if (('Character("' not in temp) and ('image="' in temp)):
-                image = temp.split('image="')[1].split('"')[0]
+            if (("Character(" not in temp) and ("image=" in temp)):
+                image = firstQuote(temp.split("image=")[1])
         sprite = ""
         if (image != ""):
             # print(image)
@@ -253,7 +317,9 @@ def handleTags(string):
     drop = string
     if ((drop[0] == "“") and (drop[-1] == "”")):
         drop = drop[1:-1]
-    elif ((drop.startswith('\\"') == True) and ((drop.endswith('\\"') == True))):
+    elif ((len(drop) >= 2) and (drop[0] in ['"', '"']) and (drop[0] == drop[-1])):
+        drop = drop[1:-1]
+    elif ((len(drop) >= 4) and (drop[0:2] in ['\\"', "\\'"]) and (drop[0:2] == drop[-2:])):
         drop = drop[2:-2]
     drop = drop.replace("\\n", " ")
     for iv in inputVars.keys():
@@ -359,9 +425,18 @@ for lab in labels:
                     continue
             if ((line.startswith("play sound ") == True) or (line.startswith("play audio ") == True)):
                 p = new.add_paragraph()
-                r = p.add_run("Sound: " + titleCase(line.split('"')[1].replace("\\", "/").split("/")[-1][0:-4]))
-                r.font.size = docx.shared.Pt(13)
-                r.italic = True
+                sound = line[11:]
+                if (sound != ""):
+                    if (sound[-1] == " "):
+                        sound = sound[0:-1]
+                    if (sound[0] in ['"', "'"]):
+                        sound = sound[1:-1]
+                    if ((len(sound) >= 4) and (sound[-4] == ".")):
+                        sound = sound[0:-4]
+                    sound = sound.replace("\\", "/").split("/")[-1]
+                    r = p.add_run("Sound: " + titleCase(sound))
+                    r.font.size = docx.shared.Pt(13)
+                    r.italic = True
             elif (line.startswith("scene ") == True):
                 temp = ""
                 for v in allImageVars:
@@ -374,10 +449,11 @@ for lab in labels:
                         chop = chop.split(" " + func + " ")[0]
                     if (chop[-1] == ":"):
                         chop = chop[0:-1]
-                    for root, dirs, files in os.walk(folder + "images"):
+                    for root, dirs, files in os.walk(folder):
                         for file in files:
-                            if (file[0:-4] == chop):
+                            if ((len(file) >= 4) and (file[0:-4] == chop) and (file[-4:] in [".png", ".jpg"])):
                                 sprite = os.path.join(root, file)
+                                break
                 if (sprite != ""):
                     if (imageChoice == "all"):
                         new.add_picture(sprite, width = pageWidth)
@@ -398,10 +474,11 @@ for lab in labels:
                         chop = chop.split(" " + func + " ")[0]
                     if (chop[-1] == ":"):
                         chop = chop[0:-1]
-                    for root, dirs, files in os.walk(folder + "images"):
+                    for root, dirs, files in os.walk(folder):
                         for file in files:
-                            if (file[0:-4] == chop):
+                            if ((len(file) >= 4) and (file[0:-4] == chop) and (file[-4:] in [".png", ".jpg"])):
                                 sprite = os.path.join(root, file)
+                                break
                 if (sprite != ""):
                     if (imageChoice == "all"):
                         new.add_picture(sprite, width = pageWidth)
@@ -453,7 +530,7 @@ for lab in labels:
                     if ((combL[j] != "") and (combLSpaced[j][0] != "#") and (spacesNew <= spacesOld)):
                         skipInd = j
                         break
-                    elif ((combL[j] != "") and (combL[j][0] == '"') and (combL[j][-1] == ":")):
+                    elif ((combL[j] != "") and (combL[j][0] in ['"', "'"]) and (combL[j][-1] == ":")):
                         menuChoices.append([combL[j][1:-2], j + 1])
                 layout = []
                 for k in range(len(menuChoices)):
@@ -475,8 +552,8 @@ for lab in labels:
                 continue    
             elif (line.startswith("show text ") == True):
                  p = new.add_paragraph()
-                 handleTags(line.split('"')[1])
-            elif (line[0:6] == "return"):
+                 handleTags(firstQuote(line))
+            elif (line == "return"):
                 if (returnCurr != ""):
                     ind = returnInd
                     curr = returnCurr
@@ -503,15 +580,15 @@ for lab in labels:
             elif (line.startswith("label ") == True):
                 curr = line[6:-1]
                 break
-            elif (line[0] == '"'):
+            elif (line[0] in ['"', "'"]):
                 p = new.add_paragraph()
-                handleTags(line.split('"')[1])
+                handleTags(firstQuote(line))
             else:
                 theKeys = list(nameVars.keys()).copy()
                 theKeys.sort() # shorter names come first
                 temp = ""
                 for k in theKeys:
-                    if ((line.startswith(k + " ") == True) or (line.startswith(k + '"') == True)):
+                    if ((line.startswith(k + " ") == True) or (line.startswith(k + '"') == True) or (line.startswith(k + "'") == True)):
                         temp = k # don't break so longer names trump shorter ones
                 if (temp != ""):
                     p = new.add_paragraph()
@@ -524,7 +601,7 @@ for lab in labels:
                             # name = p.add_run("???: ")
                             # name.bold = True
                             # name.font.size = docx.shared.Pt(12)
-                    handleTags(line.split('"')[1])
+                    handleTags(firstQuote(line))
             ind = ind + 1
             if ((ind == len(combL)) and (line.startswith("jump ") == False)):
                 curr = "g" * 1000
