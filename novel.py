@@ -1,6 +1,7 @@
 import os
 import re
 import shutil
+import string
 import subprocess
 import sys
 import FreeSimpleGUI as psg
@@ -255,17 +256,19 @@ for i in range(len(combL)):
             var = var[0:-1]
         nameVars[var] = name
         image = ""
-        if (l.endswith(")") == True):
-            temp = l.replace(" =", "=").replace("= ", "=")
-            if ("image=" in temp):
-                image = firstQuote(temp.split("image=")[1])
+        j = i
+        while (j < (len(combL) - 1)) and (("Character(" not in combL[j]) or (j == i)) and ("ImageReference(" not in combL[j]) and ("image=" not in combL[j].replace(" =", "=").replace("= ", "=")):
+            j = j + 1
+        while (j < (len(combL) - 1)) and ((("Character(" not in combL[j]) or (j == i)) and (firstQuote(combL[j]) == "")):
+            j = j + 1
+        if ("ImageReference(" in combL[j]):
+            image = firstQuote(combL[j].split("ImageReference(")[1])
+        elif ("image=" in combL[j].replace(" =", "=").replace("= ", "=")):
+            image = firstQuote(combL[j].replace(" =", "=").replace("= ", "=").split("image=")[1])
         else:
-            j = i
-            while (j < (len(combL) - 1)) and ("image=" not in combL[j].replace(" =", "=").replace("= ", "=")) and (("Character(" not in combL[j]) or (j == i)):
-                j = j + 1
-            temp = combL[j].replace(" =", "=").replace("= ", "=")
-            if (("Character(" not in temp) and ("image=" in temp)):
-                image = firstQuote(temp.split("image=")[1])
+            image = firstQuote(combL[j])
+        if ((j != i) and ("Character(" in combL[j])):
+            image = ""
         sprite = ""
         if (image != ""):
             # print(image)
@@ -299,8 +302,9 @@ for l in combL:
                 check = 1
             elif (temp.lower().replace("_", " ").replace("-", " ").startswith(n.lower() + " ") == True):
                 check = 1
-            elif ((temp.lower().startswith(n.lower()) == True) and (len(temp) > len(n)) and (temp[len(n)] in numberList)):
-                check = 1
+            elif ((temp.lower().startswith(n.lower()) == True) and (len(temp) > len(n))):
+                if ((temp[len(n)] in numberList) or ((temp[len(n) - 1] in string.ascii_lowercase) and temp[len(n)] in string.ascii_uppercase)):
+                    check = 1
         if (check == 0):
             otherImageVars.append(temp)
 allImageVars.sort() # shorter names come first
@@ -439,6 +443,7 @@ for lab in labels:
                     r.font.size = docx.shared.Pt(13)
                     r.italic = True
             elif (line.startswith("scene ") == True):
+                sprite = ""
                 temp = ""
                 for v in allImageVars:
                     if ((" " + v) in line[5:]):
@@ -464,12 +469,17 @@ for lab in labels:
                         r.font.size = docx.shared.Pt(13)
                         r.italic = True
             elif ((line.startswith("show ") == True) and (line.startswith("show text ") == False)):
+                sprite = ""
                 temp = ""
-                for v in otherImageVars:
+                bad = False
+                for v in allImageVars:
                     if ((" " + v) in line[4:]):
                         temp = v # don't break so longer names trump shorter ones
-                sprite = findSprite(temp)
-                if (sprite == ""):
+                if (temp in otherImageVars):
+                    sprite = findSprite(temp)
+                elif (temp != ""):
+                    bad = True
+                if ((sprite == "") and (bad == False)):
                     chop = line[5:]
                     for func in ["with", "as", "at", "behind", "onlayer", "zorder"]:
                         chop = chop.split(" " + func + " ")[0]
@@ -479,6 +489,17 @@ for lab in labels:
                         for file in files:
                             if ((len(file) >= 4) and (file[0:-4] == chop) and (file[-4:] in [".png", ".jpg"])):
                                 sprite = os.path.join(root, file)
+                                check = 0
+                                for n in (list(nameVars.keys()).copy() + list(nameVars.values()).copy()):
+                                    if (file.lower().replace("_", " ").replace("-", " ") == n.lower()):
+                                        check = 1
+                                    elif (file.lower().replace("_", " ").replace("-", " ").startswith(n.lower() + " ") == True):
+                                        check = 1
+                                    elif ((file.lower().startswith(n.lower()) == True) and (len(file) > len(n))):
+                                        if ((file[len(n)] in numberList) or ((file[len(n) - 1] in string.ascii_lowercase) and file[len(n)] in string.ascii_uppercase)):
+                                            check = 1
+                                if (check == 1):
+                                    sprite = ""
                                 break
                 if (sprite != ""):
                     if (imageChoice == "all"):
