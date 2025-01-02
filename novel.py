@@ -389,7 +389,10 @@ if (imageChoice != "none"):
         if (n != "~|NONE|~"):
             new.add_heading(n, 1)
             if (usedNames[n] != ""):
-                new.add_picture(usedNames[n], width = int(pageWidth * 0.5))
+                sp = usedNames[n]
+                if (os.path.exists(sp.replace(folder, folder + "tl/" + langRes + "/")) == True):
+                    sp = sp.replace(folder, folder + "tl/" + langRes + "/")
+                new.add_picture(sp, width = int(pageWidth * 0.5))
     new.add_page_break()
 
 allImageVars = []
@@ -568,6 +571,8 @@ for lab in labels:
                                 break
                 if (sprite != ""):
                     if (imageChoice == "all"):
+                        if (os.path.exists(sprite.replace(folder, folder + "tl/" + langRes + "/")) == True):
+                            sprite = sprite.replace(folder, folder + "tl/" + langRes + "/")
                         new.add_picture(sprite, width = pageWidth)
                     else:
                         p = new.add_paragraph()
@@ -609,6 +614,8 @@ for lab in labels:
                                 break
                 if (sprite != ""):
                     if (imageChoice == "all"):
+                        if (os.path.exists(sprite.replace(folder, folder + "tl/" + langRes + "/")) == True):
+                            sprite = sprite.replace(folder, folder + "tl/" + langRes + "/")
                         new.add_picture(sprite, width = pageWidth)
                     else:
                         p = new.add_paragraph()
