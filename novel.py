@@ -185,7 +185,18 @@ for root, dirs, files in os.walk(folder):
 for w in weirdData:
     combined = combined.replace(w, "")
 # print(combined[0:50])
-combinedLow = combined.lower()
+
+combLSpaced = list(combined.split("\n")).copy()
+combL = [x.strip() for x in combLSpaced]
+for i in range(len(combL)):
+    l = combL[i]
+    here = -1
+    for j in range(len(l)):
+        if ((l[j] == "#") and (inQuote(l, j) == False)):
+            here = j
+            break
+    if (here >= 0):
+        combL[i] = combL[i][0:here].strip()
 
 if (langRes != "original"):
     for root, dirs, files in os.walk(folder + "tl/" + langRes):
@@ -201,21 +212,29 @@ if (langRes != "original"):
                 newStrings = []
                 for i in range(len(lines)):
                     temp = lines[i].strip()
-                    if ((i != (len(lines) - 1)) and (len(temp) >= 4) and (temp[0:4] in ["old ", 'old"', "old'"])):
-                        for j in range(i + 1, len(lines)):
-                            temp2 = lines[j].strip()
-                            if ((len(temp2) >= 4) and (temp2[0:4] in ["new ", 'new"', "new'"])):
-                                first = firstQuote(temp).lower()
-                                if (("\n" + "label " + first + ":") not in combinedLow):
-                                    combined = combined.replace(firstQuote(temp), firstQuote(temp2))
-                                break
-                    elif ((temp.startswith("translate") == True)):
+                    if ((temp.startswith("translate") == True)):
                         # print(oldStrings)
                         # print(newStrings)
                         for j in range(min(len(oldStrings), len(newStrings))):
-                            first = oldStrings[j].lower()
-                            if (("\n" + "label " + first + ":") not in combinedLow):
-                                combined = combined.replace(oldStrings[j], newStrings[j])
+                            first = oldStrings[j]
+                            here = -1
+                            for k in range(len(first)):
+                                if ((first[k] == "#") and (inQuote(first, k) == False)):
+                                    here = k
+                                    break
+                            if (here >= 0):
+                                first = first[0:here].strip()
+                            new = newStrings[j]
+                            here = -1
+                            for k in range(len(new)):
+                                if ((new[k] == "#") and (inQuote(new, k) == False)):
+                                    here = k
+                                    break
+                            if (here >= 0):
+                                new = new[0:here].strip()
+                            for k in range(len(combL)):
+                                if (combL[k] == first):
+                                    combL[k] = new
                         if ("strings" not in temp):
                             oldStrings = [""]
                             newStrings = [""]
@@ -229,20 +248,46 @@ if (langRes != "original"):
                             newStrings.append(temp.strip())
                 if (len(oldStrings) > 0):
                     for j in range(min(len(oldStrings), len(newStrings))):
-                        first = oldStrings[j].lower()
-                        if (("\n" + "label " + first + ":") not in combinedLow):
-                            combined = combined.replace(oldStrings[j], newStrings[j])
-
-combLSpaced = list(combined.split("\n")).copy()
-combL = [x.strip() for x in combLSpaced]
-for i in range(len(combL)):
-    l = combL[i]
-    here = -1
-    for j in range(len(l)):
-        if ((l[j] == "#") and (inQuote(l, j) == False)):
-            here = j
-    if (here >= 0):
-        combL[i] = combL[i][0:here].strip()    
+                        first = oldStrings[j]
+                        here = -1
+                        for k in range(len(first)):
+                            if ((first[k] == "#") and (inQuote(first, k) == False)):
+                                here = k
+                                break
+                        if (here >= 0):
+                            first = first[0:here].strip()
+                        new = newStrings[j]
+                        here = -1
+                        for k in range(len(new)):
+                            if ((new[k] == "#") and (inQuote(new, k) == False)):
+                                here = k
+                                break
+                        if (here >= 0):
+                            new = new[0:here].strip()
+                        for k in range(len(combL)):
+                            if (combL[k] == first):
+                                combL[k] = new
+    for root, dirs, files in os.walk(folder + "tl/" + langRes): # separated to avoid substring overwriting
+        for file in files:
+            if ((file.endswith(".rpy") == True) and (file not in ["common.rpy", "names.rpy", "screens.rpy", "text history.rpy"])):
+                f = open(os.path.join(root, file), "rb")
+                r = f.read().decode("UTF-8", errors = "ignore")
+                f.close()
+                for w in weirdData:
+                    r = r.replace(w, "")
+                lines = r.split("\n")
+                for i in range(len(lines)):
+                    temp = lines[i].strip()
+                    if ((i != (len(lines) - 1)) and (len(temp) >= 4) and (temp[0:4] in ["old ", 'old"', "old'"])):
+                        for j in range(i + 1, len(lines)):
+                            temp2 = lines[j].strip()
+                            if ((len(temp2) >= 4) and (temp2[0:4] in ["new ", 'new"', "new'"])):
+                                first = firstQuote(temp)
+                                new = firstQuote(temp2)
+                                for k in range(len(combL)):
+                                    if ((first in combL[k]) and (combL[k].startswith("label") == False)):
+                                        combL[k] = combL[k].replace(first, new)
+                                break        
 
 def findSprite(image):
     global combL
@@ -686,6 +731,7 @@ for lab in labels:
                 # print(skipInd)
                 continue    
             elif (line.startswith("show text ") == True):
+                p = new.add_paragraph()
                 handleTags(firstQuote(line), False)
             elif (line == "return"):
                 if (returnCurr != ""):

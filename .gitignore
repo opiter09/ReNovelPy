@@ -2,3 +2,5 @@ game_*
 *.docx
 _novel.bat
 *.exe
+*.spec
+*.zip
