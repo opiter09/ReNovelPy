@@ -8,6 +8,10 @@ import FreeSimpleGUI as psg
 import docx # note: the module is named "python-docx" in pip
 import unrpa
 
+weirdData = [
+    (b"\xef\xbb\xbf").decode("UTF-8", errors = "ignore")
+]
+
 def titleCase(string):
     temp = string.replace("_", " ")
     if (" " not in string):
@@ -107,6 +111,8 @@ labels = ["start"]
 f = open(folder + "screens.rpy", "rb")
 r = f.read().decode("UTF-8", errors = "ignore") # python is weird about Japanese etc. when using "rt"
 f.close()
+for w in weirdData:
+    r = r.replace(w, "")
 for l in r.split("\n"):
     if ("action Start(" in l):
         labels.append(firstQuote(l.split("action Start(")[1]))
@@ -116,12 +122,55 @@ title = ""
 f = open(folder + "options.rpy", "rb")
 r = f.read().decode("UTF-8", errors = "ignore")
 f.close()
+for w in weirdData:
+    r = r.replace(w, "")
 for l in r.split("\n"):
     if (("config.name" in l) or ("config.window_title" in l)):
         title = firstQuote(l)
         break
-titleU = title.upper()
+titleU = title.strip().upper()
 # print(title)
+
+langs = ["original"]
+langRes = "original"
+for root, dirs, files in os.walk(folder + "tl/"):
+    for dirz in dirs:
+        if (dirz.lower() != "none") and (os.path.exists(folder + "tl/" + dirz) == True):
+            langs.append(dirz)
+if (len(langs) > 1):
+    layout = []
+    for i in range(len(langs)):
+        layout = layout + [[psg.Button(titleCase(langs[i].strip()), key = "choice_" + langs[i])]]
+    window = psg.Window("", layout, grab_anywhere = True, resizable = True, font = "-size 12")
+    while True:
+        event, values = window.read()
+        # See if user wants to quit or window was closed
+        if (event == psg.WINDOW_CLOSED) or (event == "Quit"):
+            break
+        elif (event.startswith("choice_") == True):
+            langRes = event.split("_")[1]
+            break
+    window.close()
+
+nameSwaps = {}
+if (langRes != "original"):
+    titleU = titleU + " [" + langRes.strip().upper() + "]"
+    if (os.path.exists(folder + "tl/" + langRes + "/names.rpy") == True):
+        f = open(folder + "tl/" + langRes + "/names.rpy", "rb")
+        r = f.read().decode("UTF-8", errors = "ignore")
+        f.close()
+        for w in weirdData:
+            r = r.replace(w, "")
+        lines = r.split("\n")
+        for i in range(len(lines) - 1):
+            temp = lines[i].strip()
+            if (temp.startswith("old") == True):
+                nameSwaps[firstQuote(temp)] = firstQuote(temp)
+                for j in range(i + 1, len(lines)):
+                    temp2 = lines[j].strip()
+                    if ((temp2.startswith("new") == True) and (firstQuote(temp2) != "")):
+                        nameSwaps[firstQuote(temp)] = firstQuote(temp2)
+                        break
 
 combined = "" # to avoid looping through files all the time
 for root, dirs, files in os.walk(folder):
@@ -133,12 +182,57 @@ for root, dirs, files in os.walk(folder):
             # if (b"label start:" in r):
                 # print(file)
             combined = combined + "\n\n" + r.decode("UTF-8", errors = "ignore")
-weirdData = [
-    (b"\xef\xbb\xbf").decode("UTF-8", errors = "ignore")
-]
 for w in weirdData:
     combined = combined.replace(w, "")
 # print(combined[0:50])
+combinedLow = combined.lower()
+
+if (langRes != "original"):
+    for root, dirs, files in os.walk(folder + "tl/" + langRes):
+        for file in files:
+            if ((file.endswith(".rpy") == True) and (file not in ["common.rpy", "names.rpy", "screens.rpy", "text history.rpy"])):
+                f = open(os.path.join(root, file), "rb")
+                r = f.read().decode("UTF-8", errors = "ignore")
+                f.close()
+                for w in weirdData:
+                    r = r.replace(w, "")
+                lines = r.split("\n")
+                oldStrings = []
+                newStrings = []
+                for i in range(len(lines)):
+                    temp = lines[i].strip()
+                    if ((i != (len(lines) - 1)) and (len(temp) >= 4) and (temp[0:4] in ["old ", 'old"', "old'"])):
+                        for j in range(i + 1, len(lines)):
+                            temp2 = lines[j].strip()
+                            if ((len(temp2) >= 4) and (temp2[0:4] in ["new ", 'new"', "new'"])):
+                                first = firstQuote(temp).lower()
+                                if (("\n" + "label " + first + ":") not in combinedLow):
+                                    combined = combined.replace(firstQuote(temp), firstQuote(temp2))
+                                break
+                    elif ((temp.startswith("translate") == True)):
+                        # print(oldStrings)
+                        # print(newStrings)
+                        for j in range(min(len(oldStrings), len(newStrings))):
+                            first = oldStrings[j].lower()
+                            if (("\n" + "label " + first + ":") not in combinedLow):
+                                combined = combined.replace(oldStrings[j], newStrings[j])
+                        if ("strings" not in temp):
+                            oldStrings = [""]
+                            newStrings = [""]
+                        else:
+                            oldStrings = []
+                            newStrings = []
+                    elif (len(oldStrings) > 0):
+                        if ((temp != "") and (temp[0] == "#") and (('"' in temp) or ("'" in temp))):
+                            oldStrings.append(temp[1:].strip())
+                        elif (('"' in temp) or ("'" in temp)):
+                            newStrings.append(temp.strip())
+                if (len(oldStrings) > 0):
+                    for j in range(min(len(oldStrings), len(newStrings))):
+                        first = oldStrings[j].lower()
+                        if (("\n" + "label " + first + ":") not in combinedLow):
+                            combined = combined.replace(oldStrings[j], newStrings[j])
+
 combLSpaced = list(combined.split("\n")).copy()
 combL = [x.strip() for x in combLSpaced]
 for i in range(len(combL)):
@@ -226,10 +320,14 @@ for i in range(len(combL)):
     if (("Character(" in l) and (l[0] != "#")):
         if ('Character("' in l):
             name = l.split('Character("')[1].split('"')[0]
+            if (name in nameSwaps.keys()):
+                name = nameSwaps[name]
             for iv in inputVars.keys():
                 name = name.replace("[" + iv + "]", inputVars[iv])
         elif ("Character('" in l):
             name = l.split("Character('")[1].split("'")[0]
+            if (name in nameSwaps.keys()):
+                name = nameSwaps[name]
             for iv in inputVars.keys():
                 name = name.replace("[" + iv + "]", inputVars[iv])
         elif ("Character(None" in l):
@@ -239,6 +337,8 @@ for i in range(len(combL)):
                 if ((combL[j] != "") and (combL[j][0] != "#")):
                     if (combL[j][0] in ['"', "'"]):
                         name = firstQuote(combL[j])
+                        if (name in nameSwaps.keys()):
+                            name = nameSwaps[name]
                         for iv in inputVars.keys():
                             name = name.replace("[" + iv + "]", inputVars[iv])
                     elif ("None" in combL[j]):
@@ -276,6 +376,11 @@ for i in range(len(combL)):
         if (((name not in usedNames.keys()) or (usedNames[name] == "")) and (name.replace("?", "") != "")):
             if ((sprite not in usedNames.values()) or (sprite == "")):
                 usedNames[name] = sprite
+    elif (("nvl_narrator" in l) and (l[0] != "#")):
+        var = l[7:].split("=")[0]
+        if (var[-1] == " "):
+            var = var[0:-1]
+        nameVars[var] = ""
 # print(usedNames)
 
 if (imageChoice != "none"):
@@ -312,19 +417,20 @@ otherImageVars.sort()
 # print(allImageVars)
 
 p = ""
-def handleTags(string):
+def handleTags(string, boldName):
     global p
     
     if (string == ""):
         return
 
     drop = string
-    if ((drop[0] == "“") and (drop[-1] == "”")):
-        drop = drop[1:-1]
-    elif ((len(drop) >= 2) and (drop[0] in ['"', "'"]) and (drop[0] == drop[-1])):
-        drop = drop[1:-1]
-    elif ((len(drop) >= 4) and (drop[0:2] in ['\\"', "\\'"]) and (drop[0:2] == drop[-2:])):
-        drop = drop[2:-2]
+    if (boldName == True):
+        if ((drop[0] == "“") and (drop[-1] == "”")):
+            drop = drop[1:-1]
+        elif ((len(drop) >= 2) and (drop[0] in ['"', "'"]) and (drop[0] == drop[-1])):
+            drop = drop[1:-1]
+        elif ((len(drop) >= 4) and (drop[0:2] in ['\\"', "\\'"]) and (drop[0:2] == drop[-2:])):
+            drop = drop[2:-2]
     drop = drop.replace("\\n", " ")
     for iv in inputVars.keys():
         drop = drop.replace("[" + iv + "]", inputVars[iv])
@@ -332,7 +438,7 @@ def handleTags(string):
     drop = drop.replace("\\{", "<").replace("\\}", ">")
     drop = drop.replace('\\"','"').replace("\\'", "'")
         
-    tags =  re.split(r'([\{\}])', drop) # thank you Stack Exchange
+    tags =  re.split(r"([\{\}])", drop) # thank you Stack Exchange
     runs = []
     for t in tags:
         runs.append([t])
@@ -468,7 +574,7 @@ for lab in labels:
                         r = p.add_run("Scene: " + titleCase(sprite.replace("\\", "/").split("/")[-1][0:-4]))
                         r.font.size = docx.shared.Pt(13)
                         r.italic = True
-            elif ((line.startswith("show ") == True) and (line.startswith("show text ") == False)):
+            elif ((line.startswith("show ") == True) and (line.startswith("show text ") == False) and (line.startswith("show screen ") == False)):
                 sprite = ""
                 temp = ""
                 bad = False
@@ -573,8 +679,7 @@ for lab in labels:
                 # print(skipInd)
                 continue    
             elif (line.startswith("show text ") == True):
-                 p = new.add_paragraph()
-                 handleTags(firstQuote(line))
+                handleTags(firstQuote(line), False)
             elif (line == "return"):
                 if (returnCurr != ""):
                     ind = returnInd
@@ -604,11 +709,12 @@ for lab in labels:
                 break
             elif (line[0] in ['"', "'"]):
                 p = new.add_paragraph()
-                handleTags(firstQuote(line))
+                handleTags(firstQuote(line), False)
             else:
                 theKeys = list(nameVars.keys()).copy()
                 theKeys.sort() # shorter names come first
                 temp = ""
+                check = 0
                 for k in theKeys:
                     if ((line.startswith(k + " ") == True) or (line.startswith(k + '"') == True) or (line.startswith(k + "'") == True)):
                         temp = k # don't break so longer names trump shorter ones
@@ -616,14 +722,14 @@ for lab in labels:
                     p = new.add_paragraph()
                     if (nameVars[temp] != "~|NONE|~"):
                         if (nameVars[temp] != ""):
+                            check = 1
                             name = p.add_run(nameVars[temp] + ": ")
                             name.bold = True
                             name.font.size = docx.shared.Pt(12)
-                        # else:
-                            # name = p.add_run("???: ")
-                            # name.bold = True
-                            # name.font.size = docx.shared.Pt(12)
-                    handleTags(firstQuote(line))
+                    if (check == 0):
+                        handleTags(firstQuote(line), False)
+                    else:
+                        handleTags(firstQuote(line), True)
             ind = ind + 1
             if ((ind == len(combL)) and (line.startswith("jump ") == False)):
                 curr = "g" * 1000
