@@ -451,6 +451,7 @@ for l in combL:
         check = 0
         numberList = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
         for n in (list(nameVars.keys()).copy() + list(nameVars.values()).copy()):
+            endNumLost = re.sub(r"[0-9]*", "", temp[::-1], count = 1)[::-1]
             if (temp.lower().replace("_", " ").replace("-", " ") == n.lower()):
                 check = 1
             elif (temp.lower().replace("_", " ").replace("-", " ").startswith(n.lower() + " ") == True):
@@ -459,6 +460,9 @@ for l in combL:
                 check = 1
             elif ((temp.lower().startswith(n.lower()) == True) and (len(temp) > len(n))):
                 if ((temp[len(n)] in numberList) or ((temp[len(n) - 1] in string.ascii_lowercase) and temp[len(n)] in string.ascii_uppercase)):
+                    check = 1
+            elif ((endNumLost.lower().endswith(n.lower()) == True) and (len(endNumLost) > len(n))):
+                if (((endNumLost[-(len(n) + 1)] == " ") and (temp[-1] in numberList)) or ((endNumLost[-len(n)] in string.ascii_uppercase) and (endNumLost[-(len(n) + 1)] in string.ascii_lowercase))):
                     check = 1
         if (check == 0):
             otherImageVars.append(temp)
@@ -644,6 +648,7 @@ for lab in labels:
                             if ((len(file) >= 4) and (file[0:-4] == chop) and (file[-4:] in [".png", ".jpg"])):
                                 sprite = os.path.join(root, file)
                                 check = 0
+                                endNumLost = re.sub(r"[0-9]*", "", file[0:-4][::-1], count = 1)[::-1]
                                 for n in (list(nameVars.keys()).copy() + list(nameVars.values()).copy()):
                                     if (file.lower().replace("_", " ").replace("-", " ") == n.lower()):
                                         check = 1
@@ -651,8 +656,12 @@ for lab in labels:
                                         check = 1
                                     elif (file[0:-4].lower().replace("_", " ").replace("-", " ").endswith(" " + n.lower()) == True):
                                         check = 1
-                                    elif ((file.lower().startswith(n.lower()) == True) and (len(file) > len(n))):
+                                    elif ((file.lower().startswith(n.lower()) == True) and (len(file[0:-4]) > len(n))):
                                         if ((file[len(n)] in numberList) or ((file[len(n) - 1] in string.ascii_lowercase) and file[len(n)] in string.ascii_uppercase)):
+                                            check = 1
+                                    elif ((endNumLost.lower().endswith(n.lower()) == True) and (len(endNumLost) > len(n))):
+                                        if (((endNumLost[-(len(n) + 1)] == " ") and (file[0:-4][-1] in numberList)) or ((endNumLost[-len(n)] in string.ascii_uppercase) and (endNumLost[-(len(n) + 1)] in string.ascii_lowercase))):
+                                            # print(sprite)
                                             check = 1
                                 if (check == 1):
                                     sprite = ""
