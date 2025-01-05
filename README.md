@@ -9,7 +9,7 @@ NOTE 2: If you cannot or do not want to pay for Microsoft Word, these documents 
 offline alternatives such as LibreOffice (https://www.libreoffice.org/).
 
 In terms of the visuals, obviously most things are not saved: you will get a list of characters with one sprite each at the beginning,
-and then backgrounds, CGs, effects, etc. intermittently. However, for some games even this can creates files of very large sizes, so
+and then backgrounds, CGs, effects, etc. intermittently. However, for some games even this can create files of very large sizes, so
 there is an option to only include the character sprites, or no visuals at all. If so, it will give you the file name as a "description".
 
 Similarly, sound effects have their file names shown, and the chapter headings are the internal "label" names. As a result of this, along
