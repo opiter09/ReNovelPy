@@ -455,6 +455,8 @@ for l in combL:
                 check = 1
             elif (temp.lower().replace("_", " ").replace("-", " ").startswith(n.lower() + " ") == True):
                 check = 1
+            elif (temp.lower().replace("_", " ").replace("-", " ").endswith(" " + n.lower()) == True):
+                check = 1
             elif ((temp.lower().startswith(n.lower()) == True) and (len(temp) > len(n))):
                 if ((temp[len(n)] in numberList) or ((temp[len(n) - 1] in string.ascii_lowercase) and temp[len(n)] in string.ascii_uppercase)):
                     check = 1
@@ -544,7 +546,6 @@ def handleTags(string, boldName):
                         thing.font.size = docx.shared.Pt(int(val.split("=")[1]))      
 
 curr = ""
-usedCurr = []
 menuChoices = []
 skipInd = -1
 returnInd = -1
@@ -556,7 +557,6 @@ for lab in labels:
     curr = lab
     while ("\n" + "label " + curr + ":") in combined:
         # print(curr)
-        usedCurr.append(curr)
         if (first == 0):
             first = 1
         else:
@@ -576,8 +576,6 @@ for lab in labels:
                 ind = ind + 1
                 if (ind == len(combL)):
                     curr = "g" * 1000
-                    if ("credits" not in usedCurr):
-                        curr = "credits"
                     # print("finalBlank")
                     break
                 else:
@@ -650,6 +648,8 @@ for lab in labels:
                                     if (file.lower().replace("_", " ").replace("-", " ") == n.lower()):
                                         check = 1
                                     elif (file.lower().replace("_", " ").replace("-", " ").startswith(n.lower() + " ") == True):
+                                        check = 1
+                                    elif (file.lower().replace("_", " ").replace("-", " ").endswith(" " + n.lower()) == True):
                                         check = 1
                                     elif ((file.lower().startswith(n.lower()) == True) and (len(file) > len(n))):
                                         if ((file[len(n)] in numberList) or ((file[len(n) - 1] in string.ascii_lowercase) and file[len(n)] in string.ascii_uppercase)):
@@ -747,14 +747,10 @@ for lab in labels:
                     break
                 else:
                     curr = "g" * 1000
-                    if ("credits" not in usedCurr):
-                        curr = "credits"
                     # print("finalReturn")
                     break
             elif ("renpy.full_restart()" in line):
                 curr = "g" * 1000
-                if ("credits" not in usedCurr):
-                    curr = "credits"
                 # print("finalReturn")
                 break
             elif (line.startswith("label ") == True):
@@ -786,8 +782,6 @@ for lab in labels:
             ind = ind + 1
             if ((ind == len(combL)) and (line.startswith("jump ") == False)):
                 curr = "g" * 1000
-                if ("credits" not in usedCurr):
-                    curr = "credits"
                 # print("finalNormal")
                 break
             elif ((len(menuChoices) > 0) and (ind in [x[1] for x in menuChoices])):
