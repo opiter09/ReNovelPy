@@ -649,7 +649,7 @@ for lab in labels:
                                         check = 1
                                     elif (file.lower().replace("_", " ").replace("-", " ").startswith(n.lower() + " ") == True):
                                         check = 1
-                                    elif (file.lower().replace("_", " ").replace("-", " ").endswith(" " + n.lower()) == True):
+                                    elif (file[0:-4].lower().replace("_", " ").replace("-", " ").endswith(" " + n.lower()) == True):
                                         check = 1
                                     elif ((file.lower().startswith(n.lower()) == True) and (len(file) > len(n))):
                                         if ((file[len(n)] in numberList) or ((file[len(n) - 1] in string.ascii_lowercase) and file[len(n)] in string.ascii_uppercase)):
