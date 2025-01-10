@@ -20,6 +20,6 @@ you and you pick one each time), but this does not take variables into account, 
 variables work is really hard (to me at least), and since I figure that choice-heavy VNs are less suited to this conversion anyway, 
 this is where we're at. However, the code is in the Public Domain, so if you would like to improve on it, by all means do so.
 
-Finally, please, please, PLEASE do not use this to facilitate piracy. It does not come with any game's assets, but it does unpack
-all archives present, and of course you could share the Word doc around if you wanted to. None of this would be possible without the
-hard work and dedication of all the VN devs out there, and they deserve fair compensation for their efforts.
+Finally, please make sure to fairly compensate VN developers for their work. I'm not going to get into specifics on that, since
+I know every game and every downloader has their own circumstances, but I just don't want to find out that someone printed off 200
+copies of a commercial VN after paying for it only once, you know?
