@@ -78,6 +78,9 @@ fo = path.split("/")[-2]
 fi = path.split("/")[-1]
 folder = "./game_" + fo.replace(" ", "_") + "/"
 # print(folder)
+authorName = psg.popup_get_text("Author Name:", font = "-size 12")
+if (authorName == None):
+    authorName = ""
 
 if (os.path.exists(folder) == False):
     shutil.copytree(path[0:-(len(fi))] + "game", folder)
@@ -87,7 +90,7 @@ if (os.path.exists(folder) == False):
                 rpa = unrpa.UnRPA(filename = os.path.join(root, file), path = folder)
                 rpa.extract_files()
                 os.remove(os.path.join(root, file))
-                
+
 layout = [
     [ psg.Button("No Images", key = "none") ],
     [ psg.Button("Characters Only", key = "chara") ],
@@ -320,6 +323,9 @@ def findSprite(image):
 new = docx.Document()
 head = new.add_heading(titleU, 0)
 head.alignment = docx.enum.text.WD_ALIGN_PARAGRAPH.CENTER
+if (authorName != ""):
+    head = new.add_heading("BY " + authorName.upper(), 0)
+    head.alignment = docx.enum.text.WD_ALIGN_PARAGRAPH.CENTER
 new.add_page_break()
 
 section = new.sections[0]
