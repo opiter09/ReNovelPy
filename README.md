@@ -20,6 +20,6 @@ you and you pick one each time), but this does not take variables into account, 
 variables work is really hard (to me at least), and since I figure that choice-heavy VNs are less suited to this conversion anyway, 
 this is where we're at. However, the code is in the Public Domain, so if you would like to improve on it, by all means do so.
 
-Finally, please make sure to fairly compensate VN developers for their work. I'm not going to get into specifics on that, since
-I know every game and every downloader has their own circumstances, but I just don't want to find out that someone printed off 200
-copies of a commercial VN after paying for it only once, you know?
+Finally, please make sure to always fairly compensate VN developers for their work. I'm not really sure why someone would pirate
+an inherently inferior book-conversion of a VN instead of the VN itself, but I would still hate to find out that someone lost sales
+because of this utility. Remember, VN developers are people too, and they need money to survive just as much as you do.
