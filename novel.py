@@ -302,7 +302,7 @@ def findSprite(image):
     sprite = ""
     for i in range(len(combL)):
         l2 = combL[i].replace(" =", "=").replace("= ", "=")
-        if ((l2.startswith("image ") == True) and (((" " + image + " ") in l2) or ((" " + image + "=") in l2))):
+        if ((l2.startswith("image ") == True) and (((" " + image + " ") in l2) or ((" " + image + "=") in l2) or ((" " + image + ":") in l2))):
             if ("Movie(" in l2):
                 break
             if ((".png" in l2) or (".jpg" in l2)):
@@ -314,7 +314,13 @@ def findSprite(image):
             for k in range(len(combL[j])):
                 small = grabQuote(combL[j], k)
                 if ((small.endswith(".png") == True) or (small.endswith(".jpg") == True)):
-                    sprite = folder + small
+                    if (os.path.exists(folder + small) == True):
+                        sprite = folder + small
+                    else:
+                        if (os.path.exists(folder + "images/" + small) == True):
+                            sprite = folder + "images/" + small
+                        else:
+                            sprite = ""
                     # print(sprite)
                     break
             break
@@ -563,6 +569,7 @@ returnCurr = ""
 returnMC = []
 returnSI = -1
 first = 0
+triple = False
 for lab in labels:
     curr = lab
     while ("\n" + "label " + curr + ":") in combined:
@@ -587,6 +594,40 @@ for lab in labels:
                 if (ind == len(combL)):
                     curr = "g" * 1000
                     # print("finalBlank")
+                    break
+                else:
+                    continue
+            # the below has a billion weird conditions to ensure that various hypothetical permutations of """ placement still work
+            if (('"""' in line) or ("'''" in line)):
+                triple = not triple
+                if ((triple == True) and (line.replace("'''", '"""').split('"""')[1] == "")):
+                    ind = ind + 1
+                    if (ind == len(combL)):
+                        curr = "g" * 1000
+                        break
+                    else:
+                        continue
+                elif ((triple == False) and (line.replace("'''", '"""').split('"""')[0] == "")):
+                    ind = ind + 1
+                    if (ind == len(combL)):
+                        curr = "g" * 1000
+                        break
+                    else:
+                        continue
+            if ((triple == True) or ((('"""' in line) or ("'''" in line)) and (line.replace("'''", '"""').split('"""')[0] != ""))):
+                p = new.add_paragraph()
+                if (('"""' in line) or ("'''" in line)):
+                    if (triple == True):
+                        handleTags(line.replace("'''", '"""').split('"""')[1], False)
+                    else:
+                        handleTags(line.replace("'''", '"""').split('"""')[0], False)
+                else:
+                    handleTags(line, False)
+                if (line.replace("'''", '"""').endswith('"""') == True):
+                    triple = False
+                ind = ind + 1
+                if (ind == len(combL)):
+                    curr = "g" * 1000
                     break
                 else:
                     continue
