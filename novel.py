@@ -654,12 +654,11 @@ for lab in labels:
                     continue
             if ((line.startswith("play sound ") == True) or (line.startswith("play audio ") == True)):
                 p = new.add_paragraph()
-                sound = line[11:]
+                sound = firstQuote(line)
                 if (sound != ""):
-                    if (sound[-1] == " "):
-                        sound = sound[0:-1]
-                    if (sound[0] in ['"', "'"]):
-                        sound = sound[1:-1]
+                    if (sound[0] == "<"):
+                        angleLen = len(sound.split(">")[0])
+                        sound = sound[(angleLen + 1):]
                     if ((len(sound) >= 4) and (sound[-4] == ".")):
                         sound = sound[0:-4]
                     sound = sound.replace("\\", "/").split("/")[-1]
