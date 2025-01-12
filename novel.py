@@ -91,9 +91,50 @@ if (os.path.exists(folder) == False):
                 rpa.extract_files()
                 os.remove(os.path.join(root, file))
 
+langs = ["original"]
+langRes = "original"
+for root, dirs, files in os.walk(folder + "tl/"):
+    for dirz in dirs:
+        if (dirz.lower() != "none") and (os.path.exists(folder + "tl/" + dirz) == True):
+            langs.append(dirz)
+if (len(langs) > 1):
+    layout = []
+    for i in range(len(langs)):
+        layout = layout + [[psg.Button(titleCase(langs[i].strip()), key = "choice_" + langs[i])]]
+    window = psg.Window("", layout, grab_anywhere = True, resizable = True, font = "-size 12")
+    while True:
+        event, values = window.read()
+        # See if user wants to quit or window was closed
+        if (event == psg.WINDOW_CLOSED) or (event == "Quit"):
+            break
+        elif (event.startswith("choice_") == True):
+            langRes = event.split("_")[1]
+            break
+    window.close()
+
+nameSwaps = {}
+if (langRes != "original"):
+    if (os.path.exists(folder + "tl/" + langRes + "/names.rpy") == True):
+        f = open(folder + "tl/" + langRes + "/names.rpy", "rb")
+        r = f.read().decode("UTF-8", errors = "ignore")
+        f.close()
+        for w in weirdData:
+            r = r.replace(w, "")
+        lines = r.split("\n")
+        for i in range(len(lines) - 1):
+            temp = lines[i].strip()
+            if (temp.startswith("old") == True):
+                nameSwaps[firstQuote(temp)] = firstQuote(temp)
+                for j in range(i + 1, len(lines)):
+                    temp2 = lines[j].strip()
+                    if ((temp2.startswith("new") == True) and (firstQuote(temp2) != "")):
+                        nameSwaps[firstQuote(temp)] = firstQuote(temp2)
+                        break
+ 
 layout = [
     [ psg.Button("No Images", key = "none") ],
     [ psg.Button("Characters Only", key = "chara") ],
+    [ psg.Button("Chars. and Selected", key = "select") ],
     [ psg.Button("All Images", key = "all") ]
 ]
 
@@ -105,10 +146,29 @@ while True:
     # See if user wants to quit or window was closed
     if (event == psg.WINDOW_CLOSED) or (event == "Quit"):
         break
-    elif (event in ["none", "chara", "all"]):
+    elif (event in ["none", "chara", "select", "all"]):
         imageChoice = event
         break
 window.close()
+
+selectFiles = []
+if (imageChoice == "select"):
+    check = 0
+    while (check == 0):
+        path2 = psg.popup_get_file("Included Image (Leave Blank to Finish):", font = "-size 12")
+        if (path2 == None):
+            path2 = ""
+        if (path2 == ""):
+            check = 1
+        else:
+            san = path2.replace("\\", "/")
+            if ("/game/" in san):
+                san = os.getcwd().replace("\\", "/") + "/" + folder[2:] + san.split("/game/")[1]
+            if ("/tl/" in san):
+                langLen = len(san.split("/tl/")[1].split("/")[0])
+                san = san.split("/tl/")[0] + san.split("/tl/")[1][langLen:]
+            selectFiles.append(san)
+# print(selectFiles)
 
 labels = ["start"]
 f = open(folder + "screens.rpy", "rb")
@@ -133,47 +193,8 @@ for l in r.split("\n"):
         break
 titleU = title.strip().upper()
 # print(title)
-
-langs = ["original"]
-langRes = "original"
-for root, dirs, files in os.walk(folder + "tl/"):
-    for dirz in dirs:
-        if (dirz.lower() != "none") and (os.path.exists(folder + "tl/" + dirz) == True):
-            langs.append(dirz)
-if (len(langs) > 1):
-    layout = []
-    for i in range(len(langs)):
-        layout = layout + [[psg.Button(titleCase(langs[i].strip()), key = "choice_" + langs[i])]]
-    window = psg.Window("", layout, grab_anywhere = True, resizable = True, font = "-size 12")
-    while True:
-        event, values = window.read()
-        # See if user wants to quit or window was closed
-        if (event == psg.WINDOW_CLOSED) or (event == "Quit"):
-            break
-        elif (event.startswith("choice_") == True):
-            langRes = event.split("_")[1]
-            break
-    window.close()
-
-nameSwaps = {}
 if (langRes != "original"):
     titleU = titleU + " [" + langRes.strip().upper() + "]"
-    if (os.path.exists(folder + "tl/" + langRes + "/names.rpy") == True):
-        f = open(folder + "tl/" + langRes + "/names.rpy", "rb")
-        r = f.read().decode("UTF-8", errors = "ignore")
-        f.close()
-        for w in weirdData:
-            r = r.replace(w, "")
-        lines = r.split("\n")
-        for i in range(len(lines) - 1):
-            temp = lines[i].strip()
-            if (temp.startswith("old") == True):
-                nameSwaps[firstQuote(temp)] = firstQuote(temp)
-                for j in range(i + 1, len(lines)):
-                    temp2 = lines[j].strip()
-                    if ((temp2.startswith("new") == True) and (firstQuote(temp2) != "")):
-                        nameSwaps[firstQuote(temp)] = firstQuote(temp2)
-                        break
 
 combined = "" # to avoid looping through files all the time
 for root, dirs, files in os.walk(folder):
@@ -643,7 +664,7 @@ for lab in labels:
                         sound = sound[0:-4]
                     sound = sound.replace("\\", "/").split("/")[-1]
                     r = p.add_run("Sound: " + titleCase(sound))
-                    r.font.size = docx.shared.Pt(13)
+                    r.font.size = docx.shared.Pt(14)
                     r.italic = True
             elif (line.startswith("scene ") == True):
                 sprite = ""
@@ -664,14 +685,15 @@ for lab in labels:
                                 sprite = os.path.join(root, file)
                                 break
                 if (sprite != ""):
-                    if (imageChoice == "all"):
+                    # print(sprite)
+                    if ((imageChoice == "all") or ((imageChoice == "select") and ((os.getcwd() + "/" + sprite[2:]).replace("\\", "/") in selectFiles))):
                         if (os.path.exists(sprite.replace(folder, folder + "tl/" + langRes + "/")) == True):
                             sprite = sprite.replace(folder, folder + "tl/" + langRes + "/")
                         new.add_picture(sprite, width = pageWidth)
                     else:
                         p = new.add_paragraph()
                         r = p.add_run("Scene: " + titleCase(sprite.replace("\\", "/").split("/")[-1][0:-4]))
-                        r.font.size = docx.shared.Pt(13)
+                        r.font.size = docx.shared.Pt(14)
                         r.italic = True
             elif ((line.startswith("show ") == True) and (line.startswith("show text ") == False) and (line.startswith("show screen ") == False)):
                 sprite = ""
@@ -714,14 +736,14 @@ for lab in labels:
                                     sprite = ""
                                 break
                 if (sprite != ""):
-                    if (imageChoice == "all"):
+                    if ((imageChoice == "all") or ((imageChoice == "select") and ((os.getcwd() + "/" + sprite[2:]).replace("\\", "/") in selectFiles))):
                         if (os.path.exists(sprite.replace(folder, folder + "tl/" + langRes + "/")) == True):
                             sprite = sprite.replace(folder, folder + "tl/" + langRes + "/")
                         new.add_picture(sprite, width = pageWidth)
                     else:
                         p = new.add_paragraph()
                         r = p.add_run("Visual: " + titleCase(sprite.replace("\\", "/").split("/")[-1][0:-4]))
-                        r.font.size = docx.shared.Pt(13)
+                        r.font.size = docx.shared.Pt(14)
                         r.italic = True
             elif (line.startswith("jump ") == True):
                 curr = line[5:]
