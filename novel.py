@@ -655,18 +655,31 @@ for lab in labels:
                 else:
                     continue
             if ((line.startswith("play sound ") == True) or (line.startswith("play audio ") == True)):
-                p = new.add_paragraph()
-                sound = firstQuote(line)
-                if (sound != ""):
+                soundList = []
+                qCheck = False
+                for i in range(len(line)):
+                    if (inQuote(line, i) == True):
+                        if (qCheck == False):
+                            qCheck = True
+                            soundList.append(grabQuote(line, i))
+                    else:
+                        qCheck = False
+                for s in soundList:
+                    # if (len(soundList) > 1):
+                        # print(s)
+                    sound = s
                     if (sound[0] == "<"):
                         angleLen = len(sound.split(">")[0])
                         sound = sound[(angleLen + 1):]
                     if ((len(sound) >= 4) and (sound[-4] == ".")):
                         sound = sound[0:-4]
                     sound = sound.replace("\\", "/").split("/")[-1]
-                    r = p.add_run("Sound: " + titleCase(sound))
-                    r.font.size = docx.shared.Pt(14)
-                    r.italic = True
+                    sound = sound.strip()
+                    if (sound != ""):
+                        p = new.add_paragraph()
+                        r = p.add_run("Sound: " + titleCase(sound))
+                        r.font.size = docx.shared.Pt(14)
+                        r.italic = True
             elif (line.startswith("scene ") == True):
                 sprite = ""
                 temp = ""
