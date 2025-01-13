@@ -463,7 +463,9 @@ for i in range(len(combL)):
 
 if (imageChoice != "none"):
     new.add_heading("Dramatis Personæ", 0)
-    for n in usedNames.keys():
+    nk = list(usedNames.keys()).copy()
+    nk.sort()
+    for n in nk:
         if (n != "~|NONE|~"):
             new.add_heading(n, 1)
             if (usedNames[n] != ""):
@@ -808,8 +810,9 @@ for lab in labels:
                 # print(skipInd)
                 continue    
             elif (line.startswith("show text ") == True):
-                p = new.add_paragraph()
-                handleTags(firstQuote(line), False)
+                if (firstQuote(line) != ""):
+                    p = new.add_paragraph()
+                    handleTags(firstQuote(line), False)
             elif (line == "return"):
                 if (returnCurr != ""):
                     ind = returnInd
@@ -834,8 +837,9 @@ for lab in labels:
                 curr = line[6:-1]
                 break
             elif (line[0] in ['"', "'"]):
-                p = new.add_paragraph()
-                handleTags(firstQuote(line), False)
+                if (firstQuote(line) != ""):
+                    p = new.add_paragraph()
+                    handleTags(firstQuote(line), False)
             else:
                 theKeys = list(nameVars.keys()).copy()
                 theKeys.sort() # shorter names come first
@@ -844,7 +848,7 @@ for lab in labels:
                 for k in theKeys:
                     if ((line.startswith(k + " ") == True) or (line.startswith(k + '"') == True) or (line.startswith(k + "'") == True)):
                         temp = k # don't break so longer names trump shorter ones
-                if (temp != ""):
+                if ((temp != "") and (firstQuote(line) != "")):
                     p = new.add_paragraph()
                     if (nameVars[temp] != "~|NONE|~"):
                         if (nameVars[temp] != ""):
