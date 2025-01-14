@@ -310,11 +310,11 @@ def findSprite(image):
 
     sprite = ""
     for i in range(len(combL)):
-        l2 = combL[i].replace(" =", "=").replace("= ", "=")
+        l2 = combL[i]
         if ((l2.startswith("image ") == True) and (((" " + image + " ") in l2) or ((" " + image + "=") in l2) or ((" " + image + ":") in l2))):
             if ("Movie(" in l2):
                 break
-            if ((".png" in l2) or (".jpg" in l2)):
+            elif ((".png" in l2) or (".jpg" in l2)):
                 j = i
             else:
                 j = i
@@ -354,17 +354,13 @@ for i in range(len(combL)):
     var = ""
     res = ""
     if (("renpy.input(" in l) and (l[0] != "#")):
-        var = l.split("=")[0]
-        if (var[-1] == " "):
-            var = var[0:-1]
+        var = l.split("=")[0].strip()
         res = titleCase(var)
         if (i < (len(combL) - 1)):
             for j in range(i + 1, len(combL)):
                 if ((combL[j] != "") and (combL[j][0] != "#") and (firstQuote(combL[j]) != "")):
                     if (unquotedCharLoc(combL[j], "=") >= 0):
-                        var = combL[j].split("=")[0]
-                        if (var[-1] == " "):
-                            var = var[0:-1]
+                        var = combL[j].split("=")[0].strip()
                         res = firstQuote(combL[j])
                         break
                     else:
@@ -384,32 +380,30 @@ for i in range(len(combL)):
     var = ""
     name = ""
     if (("Character(" in l) and (l[0] != "#")):
-        if ('Character("' in l):
-            name = l.split('Character("')[1].split('"')[0]
-            if (name in nameSwaps.keys()):
-                name = nameSwaps[name]
-            for iv in inputVars.keys():
-                name = name.replace("[" + iv + "]", inputVars[iv])
-        elif ("Character('" in l):
-            name = l.split("Character('")[1].split("'")[0]
-            if (name in nameSwaps.keys()):
-                name = nameSwaps[name]
-            for iv in inputVars.keys():
-                name = name.replace("[" + iv + "]", inputVars[iv])
-        elif ("Character(None" in l):
+        afterString = l.split("Character(")[1].strip()
+        if ((afterString != "") and (afterString[0] in ['"', "'"])):
+            name = firstQuote(afterString)
+        elif ("name=" in afterString.replace("name =", "name=")):
+            name = firstQuote(afterString.replace("name =", "name=").split("name=")[1])
+        elif (afterString.startswith("None") == True):
             name = "~|NONE|~" # surely no-one actually uses this, right?
-        elif (i < (len(combL) - 1)):
+        elif (((afterString == "") or (afterString[-1] == ",")) and (i < (len(combL) - 1))):
             for j in range(i + 1, len(combL)):
                 if ((combL[j] != "") and (combL[j][0] != "#")):
-                    if (combL[j][0] in ['"', "'"]):
+                    if ((combL[j][0] in ['"', "'"]) or (combL[j].replace("name =", "name=").startswith("name=") == True)):
                         name = firstQuote(combL[j])
-                        if (name in nameSwaps.keys()):
-                            name = nameSwaps[name]
-                        for iv in inputVars.keys():
-                            name = name.replace("[" + iv + "]", inputVars[iv])
-                    elif ("None" in combL[j]):
+                        if ("name=None" in combL[j].replace(" ", "")):
+                            name = "~|NONE|~"
+                        break
+                    elif (combL[j].startswith("None") == True):
                         name = "~|NONE|~"
-                    break
+                        break
+                    elif ((afterString != "") and (afterString[-1] == ")")):
+                        break
+        if (name in nameSwaps.keys()):
+            name = nameSwaps[name]
+        for iv in inputVars.keys():
+            name = name.replace("[" + iv + "]", inputVars[iv])
         name = name.replace("\\[", "[").replace("\\]", "]")
         name = name.replace("\\{", "<").replace("\\}", ">")
         for j in range(len(name)):
@@ -417,20 +411,18 @@ for i in range(len(combL)):
                 if (name[j + 1] != "{"):
                     name = name[(j + 1):].split("{")[0]
                     break
-        var = l[7:].split("=")[0]
-        if (var[-1] == " "):
-            var = var[0:-1]
+        var = l[7:].split("=")[0].strip()
         nameVars[var] = name
         image = ""
         j = i
-        while (j < (len(combL) - 1)) and (("Character(" not in combL[j]) or (j == i)) and ("ImageReference(" not in combL[j]) and ("image=" not in combL[j].replace(" =", "=").replace("= ", "=")):
+        while (j < (len(combL) - 1)) and (("Character(" not in combL[j]) or (j == i)) and ("ImageReference(" not in combL[j]) and ("image=" not in combL[j].replace("image =", "image=")):
             j = j + 1
         while (j < (len(combL) - 1)) and ((("Character(" not in combL[j]) or (j == i)) and (firstQuote(combL[j]) == "")):
             j = j + 1
         if ("ImageReference(" in combL[j]):
             image = firstQuote(combL[j].split("ImageReference(")[1])
-        elif ("image=" in combL[j].replace(" =", "=").replace("= ", "=")):
-            image = firstQuote(combL[j].replace(" =", "=").replace("= ", "=").split("image=")[1])
+        elif ("image=" in combL[j].replace("image =", "image=")):
+            image = firstQuote(combL[j].replace("image =", "image=").split("image=")[1])
         else:
             image = firstQuote(combL[j])
         if ((j != i) and ("Character(" in combL[j])):
@@ -443,9 +435,7 @@ for i in range(len(combL)):
             if ((sprite not in usedNames.values()) or (sprite == "")):
                 usedNames[name] = sprite
     elif (("nvl_narrator" in l) and (l[0] != "#")):
-        var = l[7:].split("=")[0]
-        if (var[-1] == " "):
-            var = var[0:-1]
+        var = l[7:].split("=")[0].strip()
         nameVars[var] = ""
 # print(usedNames)
 
@@ -467,9 +457,7 @@ allImageVars = []
 otherImageVars = []
 for l in combL:
     if (l.startswith("image ") == True):
-        temp = l[6:].split(":")[0].split("=")[0]
-        if (temp[-1] == " "):
-            temp = temp[0:-1]
+        temp = l[6:].split(":")[0].split("=")[0].strip()
         allImageVars.append(temp)
         check = 0
         numberList = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
