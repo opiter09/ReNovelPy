@@ -73,6 +73,14 @@ def firstQuote(string):
             break
     return(grabQuote(string, here))
     
+def unquotedCharLoc(string, char):
+    check = -1
+    for i in range(len(string)):
+        if ((string[i] == char) and (inQuote(string, i) == False)):
+            check = i
+            break
+    return(check)
+    
 path = psg.popup_get_file("Game Executable:", font = "-size 12")
 fo = path.split("/")[-2]
 fi = path.split("/")[-1]
@@ -214,11 +222,7 @@ combLSpaced = list(combined.split("\n")).copy()
 combL = [x.strip() for x in combLSpaced]
 for i in range(len(combL)):
     l = combL[i]
-    here = -1
-    for j in range(len(l)):
-        if ((l[j] == "#") and (inQuote(l, j) == False)):
-            here = j
-            break
+    here = unquotedCharLoc(l, "#")
     if (here >= 0):
         combL[i] = combL[i][0:here].strip()
 
@@ -241,19 +245,11 @@ if (langRes != "original"):
                         # print(newStrings)
                         for j in range(min(len(oldStrings), len(newStrings))):
                             first = oldStrings[j]
-                            here = -1
-                            for k in range(len(first)):
-                                if ((first[k] == "#") and (inQuote(first, k) == False)):
-                                    here = k
-                                    break
+                            here = unquotedCharLoc(first, "#")
                             if (here >= 0):
                                 first = first[0:here].strip()
                             new = newStrings[j]
-                            here = -1
-                            for k in range(len(new)):
-                                if ((new[k] == "#") and (inQuote(new, k) == False)):
-                                    here = k
-                                    break
+                            here = unquotedCharLoc(new, "#")
                             if (here >= 0):
                                 new = new[0:here].strip()
                             for k in range(len(combL)):
@@ -273,19 +269,11 @@ if (langRes != "original"):
                 if (len(oldStrings) > 0):
                     for j in range(min(len(oldStrings), len(newStrings))):
                         first = oldStrings[j]
-                        here = -1
-                        for k in range(len(first)):
-                            if ((first[k] == "#") and (inQuote(first, k) == False)):
-                                here = k
-                                break
+                        here = unquotedCharLoc(first, "#")
                         if (here >= 0):
                             first = first[0:here].strip()
                         new = newStrings[j]
-                        here = -1
-                        for k in range(len(new)):
-                            if ((new[k] == "#") and (inQuote(new, k) == False)):
-                                here = k
-                                break
+                        here = unquotedCharLoc(new, "#")
                         if (here >= 0):
                             new = new[0:here].strip()
                         for k in range(len(combL)):
@@ -373,7 +361,7 @@ for i in range(len(combL)):
         if (i < (len(combL) - 1)):
             for j in range(i + 1, len(combL)):
                 if ((combL[j] != "") and (combL[j][0] != "#") and (firstQuote(combL[j]) != "")):
-                    if ("=" in combL[j]):
+                    if (unquotedCharLoc(combL[j], "=") >= 0):
                         var = combL[j].split("=")[0]
                         if (var[-1] == " "):
                             var = var[0:-1]
@@ -657,11 +645,20 @@ for lab in labels:
             if ((line.startswith("play sound ") == True) or (line.startswith("play audio ") == True)):
                 soundList = []
                 qCheck = False
-                for i in range(len(line)):
-                    if (inQuote(line, i) == True):
+                whole = ""
+                if ((unquotedCharLoc(line, "[") >= 0) and (unquotedCharLoc(line, "]") == -1)):
+                    for i in range(ind + 1, len(combL)):
+                        whole = whole + combL[i] + "\n"
+                        if (unquotedCharLoc(combL[i], "]") >= 0):
+                            ind = i
+                            break
+                else:
+                    whole = line
+                for i in range(len(whole)):
+                    if (inQuote(whole, i) == True):
                         if (qCheck == False):
                             qCheck = True
-                            soundList.append(grabQuote(line, i))
+                            soundList.append(grabQuote(whole, i))
                     else:
                         qCheck = False
                 for s in soundList:
