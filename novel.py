@@ -353,12 +353,12 @@ for i in range(len(combL)):
     l = combL[i]
     var = ""
     res = ""
-    if (("renpy.input(" in l) and (l[0] != "#")):
+    if ("renpy.input(" in l):
         var = l.split("=")[0].strip()
         res = titleCase(var)
         if (i < (len(combL) - 1)):
             for j in range(i + 1, len(combL)):
-                if ((combL[j] != "") and (combL[j][0] != "#") and (firstQuote(combL[j]) != "")):
+                if ((combL[j] != "") and (firstQuote(combL[j]) != "")):
                     if (unquotedCharLoc(combL[j], "=") >= 0):
                         var = combL[j].split("=")[0].strip()
                         res = firstQuote(combL[j])
@@ -379,7 +379,7 @@ for i in range(len(combL)):
     l = combL[i]
     var = ""
     name = ""
-    if (("Character(" in l) and (l[0] != "#")):
+    if ("Character(" in l):
         afterString = l.split("Character(")[1].strip()
         if ((afterString != "") and (afterString[0] in ['"', "'"])):
             name = firstQuote(afterString)
@@ -389,7 +389,7 @@ for i in range(len(combL)):
             name = "~|NONE|~" # surely no-one actually uses this, right?
         elif (((afterString == "") or (afterString[-1] == ",")) and (i < (len(combL) - 1))):
             for j in range(i + 1, len(combL)):
-                if ((combL[j] != "") and (combL[j][0] != "#")):
+                if (combL[j] != ""):
                     if ((combL[j][0] in ['"', "'"]) or (combL[j].replace("name =", "name=").startswith("name=") == True)):
                         name = firstQuote(combL[j])
                         if ("name=None" in combL[j].replace(" ", "")):
@@ -398,7 +398,7 @@ for i in range(len(combL)):
                     elif (combL[j].startswith("None") == True):
                         name = "~|NONE|~"
                         break
-                    elif ((afterString != "") and (afterString[-1] == ")")):
+                    elif (combL[j][-1] != ","):
                         break
         if (name in nameSwaps.keys()):
             name = nameSwaps[name]
@@ -415,9 +415,9 @@ for i in range(len(combL)):
         nameVars[var] = name
         image = ""
         j = i
-        while (j < (len(combL) - 1)) and (("Character(" not in combL[j]) or (j == i)) and ("ImageReference(" not in combL[j]) and ("image=" not in combL[j].replace("image =", "image=")):
+        while (j < (len(combL) - 1)) and ((combL[j] == "") or (combL[j][-1] == ",") or (j == i)) and ("ImageReference(" not in combL[j]) and ("image=" not in combL[j].replace("image =", "image=")):
             j = j + 1
-        while (j < (len(combL) - 1)) and ((("Character(" not in combL[j]) or (j == i)) and (firstQuote(combL[j]) == "")):
+        while (j < (len(combL) - 1)) and ((combL[j] == "") or (combL[j][-1] == ",") or (j == i)) and (firstQuote(combL[j]) == ""):
             j = j + 1
         if ("ImageReference(" in combL[j]):
             image = firstQuote(combL[j].split("ImageReference(")[1])
@@ -425,7 +425,7 @@ for i in range(len(combL)):
             image = firstQuote(combL[j].replace("image =", "image=").split("image=")[1])
         else:
             image = firstQuote(combL[j])
-        if ((j != i) and ("Character(" in combL[j])):
+        if ((combL[j] != "") and (j != i) and (combL[j][-1] != ",")):
             image = ""
         sprite = ""
         if (image != ""):
@@ -434,7 +434,7 @@ for i in range(len(combL)):
         if (((name not in usedNames.keys()) or (usedNames[name] == "")) and (name.replace("?", "") != "")):
             if ((sprite not in usedNames.values()) or (sprite == "")):
                 usedNames[name] = sprite
-    elif (("nvl_narrator" in l) and (l[0] != "#")):
+    elif ("nvl_narrator" in l):
         var = l[7:].split("=")[0].strip()
         nameVars[var] = ""
 # print(usedNames)
@@ -784,7 +784,7 @@ for lab in labels:
                             spacesNew = spacesNew + 4
                         else:
                             break
-                    if ((combL[j] != "") and (combLSpaced[j][0] != "#") and (spacesNew <= spacesOld)):
+                    if ((combL[j] != "") and (spacesNew <= spacesOld)):
                         skipInd = j
                         break
                     elif ((combL[j] != "") and (combL[j][0] in ['"', "'"]) and (combL[j][-1] == ":")):
