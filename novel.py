@@ -398,7 +398,7 @@ for i in range(len(combL)):
                     elif (combL[j].startswith("None") == True):
                         name = "~|NONE|~"
                         break
-                    elif (combL[j][-1] != ","):
+                    elif (combL[j][-1] == ")"):
                         break
         if (name in nameSwaps.keys()):
             name = nameSwaps[name]
@@ -415,9 +415,9 @@ for i in range(len(combL)):
         nameVars[var] = name
         image = ""
         j = i
-        while (j < (len(combL) - 1)) and ((combL[j] == "") or (combL[j][-1] == ",") or (j == i)) and ("ImageReference(" not in combL[j]) and ("image=" not in combL[j].replace("image =", "image=")):
+        while (j < (len(combL) - 1)) and ((combL[j] == "") or (combL[j][-1] != ")") or (j == i)) and ("ImageReference(" not in combL[j]) and ("image=" not in combL[j].replace("image =", "image=")):
             j = j + 1
-        while (j < (len(combL) - 1)) and ((combL[j] == "") or (combL[j][-1] == ",") or (j == i)) and (firstQuote(combL[j]) == ""):
+        while (j < (len(combL) - 1)) and ((combL[j] == "") or (combL[j][-1] != ")") or (j == i)) and (firstQuote(combL[j]) == ""):
             j = j + 1
         if ("ImageReference(" in combL[j]):
             image = firstQuote(combL[j].split("ImageReference(")[1])
@@ -425,8 +425,6 @@ for i in range(len(combL)):
             image = firstQuote(combL[j].replace("image =", "image=").split("image=")[1])
         else:
             image = firstQuote(combL[j])
-        if ((combL[j] != "") and (j != i) and (combL[j][-1] != ",")):
-            image = ""
         sprite = ""
         if (image != ""):
             # print(image)
