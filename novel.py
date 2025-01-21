@@ -516,7 +516,7 @@ def handleTags(string, boldName):
                     if (safe.split("=")[0] == "size"):
                         lastSize = safe
                 elif (safe.split("=")[0] == "space"):
-                    runs[i + 1][0] = " " * int(safe.split("=")[1])
+                    runs[i + 1][0] = " " # * int(safe.split("=")[1])
             else:
                 safe = tags[i + 1].replace(" ", "")
                 for j in range(i + 1, len(tags)):
