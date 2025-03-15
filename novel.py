@@ -546,11 +546,11 @@ def handleTags(string, boldName):
             for val in r:
                 if (val.startswith("size") == True):
                     if ("*" in val):
-                        thing.font.size = int(thing.font.size * float(val.split("*")[1]))
+                        thing.font.size = max(8, int(thing.font.size * float(val.split("*")[1])))
                     elif ("+" in val):
                         thing.font.size = thing.font.size + docx.shared.Pt(int(val.split("+")[1]))
                     elif ("-" in val):
-                        thing.font.size = thing.font.size - docx.shared.Pt(int(val.split("-")[1]))
+                        thing.font.size = max(8, thing.font.size - docx.shared.Pt(int(val.split("-")[1])))
                     else:
                         thing.font.size = docx.shared.Pt(int(val.split("=")[1]))      
 
