@@ -26,6 +26,9 @@ Finally, please make sure to always fairly compensate VN developers for their wo
 an inherently inferior book-conversion of a VN instead of the VN itself, but I would still hate to find out that someone lost sales
 because of this utility. Remember, VN developers are people too, and they need money to survive just as much as you do.
 
+On a similar note, I recently played a VN with the restriction in its Readme that "ripping the game's graphical or musical assets is
+not permitted." Please do not use ReNovelPy on a VN with this restriction, or any other restriction that would apply.
+
 [1]: The code is very flexible when it comes to location: you can choose images at the site of the game's executable, or at the site of
 novel.exe; inside of a translation folder, or out in the main one. However, it is important to be aware that for games with archives,
 you will only be able to choose the files by going into the folder where novel.exe is, since that is where they have been unpacked.
