@@ -19,9 +19,10 @@ def titleCase(string):
     temp2 = ""
     for s in temp.split(" "):
         if (len(s) > 1):
-            temp2 = temp2 + s[0].upper() + s[1:].lower()
+            temp2 = temp2 + s[0].upper() + s[1:].lower() + " "
         elif (len(s) == 1):
-            temp2 = temp2 + s[0].upper()
+            temp2 = temp2 + s[0].upper() + " "
+    temp2 = temp2.strip()
     return(temp2)
 
 def inQuote(string, loc):
